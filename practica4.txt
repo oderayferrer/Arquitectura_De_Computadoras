@@ -1,0 +1,439 @@
+5. Programas simples ❥❦ ❥❦.
+Escribir un programa en WinMIPS64 que:
+a) Lee 2 números A y B de la memoria de datos a registros, y calcula S, P y D, que luego se guardan en la memoria de
+datos.
+b) Dadas dos variables A y B de la memoria, calcula y almacena C
+c) Calcula el factorial de N, y lo guarda en F
+d) Calcula el logaritmo (entero) en base 2 de N (N positivo) mediante divisiones sucesivas y lo guarda en L
+e) Guarda en B el valor 1 si A es impar y 0 de lo contrario
+Los nombres de variables como A, B, C, etc, deben implementarse usando variables de tipo word a las cuales se lee y
+escribe de memoria con ld y sd. 
+
+a)
+.data
+A: .word 2
+B: .word 5
+s: .word 0
+p: .word 0
+d: .word 0
+
+.code
+ld $t0, A($0)
+ld $t1, B($0)
+dadd $t2, $t0, $t1
+sd $t2, s($0)
+dmul $t2, $t0, $t1
+daddi $t2, $t2, 2
+sd $t2, p($0)
+dmul $t2, $t0, $t0
+ddiv $t2, $t2, $t1
+sd $t2, d($0)
+halt
+
+a con mati) 
+.data
+a: .word 2
+b: .word 5
+s: .word 0
+p: .word 0
+d: .word 0
+
+.code
+ld $t0, a($0)
+ld $t1, b($0)
+dadd $t2, $t0, $t1
+sd $t2, s($0)
+dmul $t2, $t0, $t1
+daddi $t2, $t2, 2
+sd $t2, p($0)
+dmul $t2, $t0, $t0
+ddiv $t2, $t2, $t1
+sd $t2, d($0)
+halt
+
+b con mati)
+.data
+a: .word 2
+b: .word 5
+c: .word 0
+
+.code
+ld $t0, a($0)
+ld $t1, b($0)
+
+dadd $t2, $t0, $0
+
+bnez $t0, else
+j fin
+else:  slt $t3, $t1, $t0
+	beqz salto
+	daddi $t3, $0, 2
+	dmul $t2, $t0, $t3
+	j fin
+salto: dadd $t2, $0, $t1
+
+fin: sd $t2, c($0)
+halt
+
+b)
+.data
+A: .word 2
+B: .word 5
+C: .word 0
+
+.code
+ld $t0, A($0)
+ld $t1, B($0)
+dadd $t2, $0, $0
+daddi $t4, $0, 2
+beqz $t0, fin
+slt $t3, $t1, $t0
+bnez $t3, sigo
+dadd $t2, $0, $t1
+j fin
+sigo: dmul $t2, $t0, $t4
+fin: sd $t2, c($0)
+halt
+
+c)
+.data
+f: .word 0
+n: .word 5
+
+.code
+daddi $t1, $0, 1 ; resultado
+ld $t2, n($0) ; n
+daddi $t0, $0, 1 ;i
+
+
+loop: beqz $t2 fin
+dmul  $t1, $t1, $t0
+daddi $t2, $t2, -1
+daddi $t0, $t0, 1
+j loop
+
+fin: sd $t1, f($0)
+halt
+
+
+d)
+.data
+l: .word 0
+n: .word 4
+
+.code
+ld $t0, n($0)
+ld $t1, l($0)
+daddi $t4, $0, 2
+daddi $t2, $0, 1
+while: slt $t3, $t2, $t0
+	beqz $t3, fin
+	ddiv $t0, $t0, $t4
+	daddi $t1, $t1, 1
+	j while
+fin: sd $t1, l($0)
+     halt
+	
+e)
+
+.data 
+a: .word 3
+b: .word 0
+
+.code
+
+ld $t0, a($0)
+andi $t1, $t0, 1
+ld $t1, b($0)
+halt
+
+
+6a)
+.data
+V: .word 5, 2, 6
+suma: .word 0
+.code
+
+daddi $t0, $0, V
+
+ld $t1, 0($t0)
+ld $t2, 8($t0)
+ld $t3, 16($t0)
+
+dadd $t4, $t1, $t2
+dadd $t4, $t4, $t3
+
+sd $t4, suma($0)
+halt
+
+6b)
+.data
+V: .word 5, 2, 6
+suma: .word 0
+.code
+
+daddi $t1, $0, 3
+daddi $t2, $0, 8
+daddi $t3, $0, 0
+daddi $t5, $0, 0
+loop: beqz $t1, fin
+ld $t4, V($t3)
+dadd $t5, $t5, $t4
+dadd $t3, $t3, $t2
+daddi $t1, $t1, -1
+j loop	
+
+fin: sd $t5, suma($0)
+halt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+6b)
+V: .word 5, 2, 6
+d add i $t2, $0, 0 ; registro desplazamiento
+dadd $t3, $0, $0   ; lleva la suma de los elementos
+daddi $t4, $0, 3; cantidad de elementos del vector
+loop:   ld $t0, V($t2)
+	dadd $t3, $t3, $t0
+	daddi $t2, $t2, 8
+	daddi $t4, $t4, -1
+	bnez $t4, loop
+halt
+
+6c)
+.data
+V: .word 5, 2, 6
+
+.code
+
+daddi $t2, $0, V
+daddi $t3, $0, 3
+daddi $t4, $0, 0 ; suma de elementos
+
+loop: ld $t0, 0($t2)
+dadd $t4, $t4, $t0
+daddi $t3, $t3, -1
+daddi $t2, $t2, 8
+bnez $t3, loop
+
+halt
+
+
+
+
+
+
+
+
+
+
+
+
+
+6c) 
+V: .word 5, 2, 6
+d add i $t2, $0, V ; registro puntero
+dadd $t3, $0, $0   ; lleva la suma de los elementos
+daddi $t4, $0, 3; cantidad de elementos del vector
+loop:   ld $t0, 0($t2)
+	dadd $t3, $t3, $t0
+	daddi $t2, $t2, 8
+	daddi $t4, $t4, -1
+	bnez $t4, loop
+halt
+
+6d) te carga el 2 y el 5 
+solución en vez de ld lw
+
+V: .word32 5, 2, 6
+d add i $t2, $0, V ; registro puntero
+dadd $t3, $0, $0   ; lleva la suma de los elementos
+daddi $t4, $0, 3; cantidad de elementos del vector
+loop:   lw $t0, 0($t2)
+	dadd $t3, $t3, $t0
+	daddi $t2, $t2, 4
+	daddi $t4, $t4, -1
+	bnez $t4, loop
+halt
+
+NO HAY PUNTO FLOTANTE Y NO HAY E/SALIDA CON CONTROL DATA
+
+PARTE DOS
+1f)
+.data
+exponente: .word 2
+baseuno: .word 2
+basedos: .word 3
+resultado: .word 0
+
+.code
+ld $a0, exponente($zero)
+ld $a1, baseuno($zero)
+jal potencia 
+dadd $s0, $0, $v0
+ld $a0, exponente($zero)
+ld $a1, basedos($zero)
+jal potencia
+dadd $s0, $s0, $v0
+sd $s0, resultado($0)
+halt
+
+potencia: daddi $v0, $zero, 1
+loop: beqz $a0, fin
+      daddi $a0, $a0, -1
+      dmul $v0, $v0, $a1
+      j loop
+fin: jr $ra
+
+3)
+daddi $sp, $0, 0x400
+daddi $t0, $0, 5
+daddi $t1, $0, 8
+
+daddi $sp, $sp, -8
+sd $t0, 0($sp)
+
+daddi $sp, $sp, -8
+sd $t1, 0($sp)
+
+ld $t0, 0($sp)
+daddi $sp $sp, 8
+
+ld $t1, 0($sp)
+daddi $sp, $sp, 8
+
+halt
+
+4)
+.data
+exponente: .word 2
+baseuno: .word 2
+basedos: .word 3
+resultado: .word 0
+
+.code
+daddi $sp, $0, 0x400
+daddi $a0, $0, exponente //cargo la direc del exponente en a0
+daddi $a1,$0, baseuno  // cargo la direc del primer numero
+jal potencia 
+daddi $s0, $v0, 0
+daddi $a0, $0, basedos
+jal potencia
+dadd $s0,$s0 $v0
+halt
+
+potencia: daddi $sp, $sp, -24
+sd $ra, 0($sp)
+sd $s0, 8($sp)
+sd $s1, 16($sp)
+ld $s0, 0($a0)
+ld $s1, 0($a1)
+daddi $v0, $0, 1
+loop: beqz $s1, fin
+daddi $s1, $s1, -1
+dmul $v0, $v0, $s0
+j loop
+fin: ld $ra, 0($sp)
+ld $s0, 8($sp)
+ld $s1, 16($sp)
+daddi $sp, $sp, 24
+jr $ra
+
+
+6)
+vec: .word 1,2,3,4
+
+.code
+daddi $sp, $0, 0x400 #inicializo el vector
+daddi $a0, $0, vec
+daddi $a1, $0, 4
+jal vectorcuadrado
+halt
+
+vectorcuadrado: daddi $sp, $sp, -32 
+sd $ra, 0($sp) # guardo la direc ret
+sd $a0, 8($sp)
+sd $a1, 16($sp)
+sd $s0, 24($sp)
+daddi $s0, $a1, 0
+daddi $a1, $zero, 2
+
+loop: beqz $s0, fin
+daddi $s0, $s0, -1
+jal potencia
+sd $v0, 0($a0)
+daddi $a0, $a0, 8
+j loop
+fin: ld $ra, 0($sp)
+ld $a0, 8($sp)
+ld $a1, 16($sp)
+ld $s0, 24($sp)
+daddi $sp, $sp, 32
+
+
+potencia: daddi $sp, $sp, -24
+sd $ra, 0($sp)
+sd $s0, 8($sp)
+sd $s1, 16($sp)
+
+ld $s0, 0($a0)
+daddi $s1, $a1, 0
+daddi $v0, $0, 1
+lazo: beqz $s1, chau
+daddi $s1, $s1, -1
+dmul $v0, $v0, $s0
+j lazo
+
+chau: ld $ra, 0($sp)
+ld $s0, 8($sp)
+ld $s1, 16($sp)
+daddi $sp, $sp, 24
+jr $ra	
+
+7)
+b)
+
+
+
+
+
+parte tres
+ESTOS SON TIPO PARCIAL ASI QUE LOS TENDRIA QUE HACER PARA REPASAR PERO PARA INTENTAR MANTENERME AL DIA CON TODO LOS DEJE PA LA ODE DEL FUTURO
+HOLA ODE DEL FUTURO PERDON
+1b)
+.data​
+cadena: .asciiz "adbdcdedfdgdhdid"​ # cadena a analizar​
+car: .ascii "d"​ # carácter buscado​
+cant: .word 0​ # cantidad de veces que se repite el carácter car en cadena.​
+
+.code
+daddi $t0, $0, 0 ;registro como desplazamiento 
+daddi $t1, $0, 0 ; contador
+lbu $t2, car($0) ; cargamos en $t2 el carácter "d"
+
+loop: lbu $t3, cadena($t0)
+beqz $t3, fin
+
+bne $t3, $t2, sigo
+daddi $t1, $t1, 1
+sigo: daddi $t0, $t0, 1
+j loop
+ 
+fin: sd $t1, cant($0)
+halt
+
+
+4a)

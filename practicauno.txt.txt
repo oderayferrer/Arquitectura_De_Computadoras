@@ -1,0 +1,685 @@
+; Escribir un programa que declare un string llamado MENSAJE, almacenado en la memoria de datos, cuente la cantidad
+; de veces que la letra ‘a’ (minúscula) aparece en MENSAJE y lo almacene en la variable CANT. Por ejemplo, si
+; MENSAJE contiene “Hola, Buenas Tardes”, entonces CANT debe valer 3.
+
+ORG 1000h
+    MSJ DB "Hola, Buenas Tardes"
+    CANTA DB ?
+    CARA DB 'a'
+
+ORG 2000H
+        MOV BX, OFFSET MSJ
+        MOV AL, OFFSET CANTA - OFFSET MSJ
+        MOV CL, 0
+LOOP: MOV CH, [BX]
+        CMP ch, CARA ; se podría hacer el cmp con mdd indirecto, pero usando cmp byte ptr [BX], 'a'
+        JNZ NOT_A
+        INC CL
+NOT_A:     INC BX
+           DEC AL
+           JNZ LOOP
+        MOV CANTA, CL
+INT 0
+END
+
+
+
+
+EJERCICIO 2
+
+ORG 1000H
+MSJ DB "ARQUITECTURA DE COMPUTADORAS-"
+DB "FACULTAD DE INFORMATICA-"
+DB 55H
+DB 4EH
+DB 4CH
+DB 50H
+FIN DB ?
+
+ORG 2000h
+MOV BX, OFFSET MSJ
+MOV AL, OFFSET FIN - OFFSET MSJ
+INT 7
+INT 0
+END
+
+a)​ Ejecutar en el simulador ¿qué imprime?
+ARQUITECTURA DE COMPUTADORAS-FA CULTAD DE I
+NFORMATICA-UNLP
+
+
+b)​ ¿Por qué imprime “UNLP” al final?
+Imprime UNLP al final ya que los ultimos cuatro DB almacenan los codigos de los caracteres en hexa de la tabla ascii
+
+c)​ Con referencia a la interrupción INT 7, ¿qué se almacena en los registros BX y AL?
+En bx se almacena la direccion inicial de msj
+en al se guarda la cantidad de caracteres que tiene el mensaje
+
+d)​ Modifique el programa para que solo imprima la primera parte del mensaje: “ARQUITECTURA DE
+COMPUTADORAS-”
+
+
+ORG 1000H
+MSJ DB "ARQUITECTURA DE COMPUTADORAS-"
+corte DB "FACULTAD DE INFORMATICA-"
+DB 55H
+DB 4EH
+DB 4CH
+DB 50H
+FIN DB ?
+
+ORG 2000h
+MOV BX, OFFSET MSJ
+MOV AL, OFFSET corte - OFFSET MSJ
+INT 7
+INT 0
+END
+
+
+e)​ Modifique el programa para que solo imprima la primera letra, es decir, la “A”
+
+
+ORG 1000H
+MSJ DB "ARQUITECTURA DE COMPUTADORAS-"
+DB "FACULTAD DE INFORMATICA-"
+DB 55H
+DB 4EH
+DB 4CH
+DB 50H
+FIN DB ?
+
+ORG 2000h
+MOV BX, OFFSET MSJ
+MOV AL, 1
+INT 7
+INT 0
+END
+
+
+EJERCICIO 3
+
+ORG 1000H
+MSJ DB "INGRESE UN NUMERO:"
+FIN DB ?
+
+ORG 1500H
+NUM DB ?
+
+ORG 2000H
+MOV BX, OFFSET MSJ
+MOV AL, OFFSET FIN-OFFSET MSJ
+INT 7
+
+MOV BX, OFFSET NUM
+INT 6
+MOV AL, 1
+INT 7
+
+MOV CL, NUM
+INT 0 
+END
+
+a)Con referencia a la interrupción INT 6, ¿qué se almacena en BX?
+La direccion de num (1500h)
+
+b)En el programa anterior, ¿qué hace la segunda interrupción INT 7?
+imprime el numero
+
+c)¿Qué valor queda almacenado en el registro CL? ¿Es el mismo que el valor numérico ingresado?
+No ya que es el caracter en hexa
+d)Modificar el programa anterior para que lea dos dígitos en lugar de uno, con dos variables: NUM1 y NUM2.
+
+ORG 1000H
+MSJ DB "INGRESE UN NUMERO: "
+FIN DB ?
+
+ORG 1500H
+NUM1 DB ?, 0Ah
+NUM2 DB ?, 0Ah
+ORG 2000H
+MOV BX, OFFSET MSJ
+MOV AL, OFFSET FIN-OFFSET MSJ
+INT 7
+
+MOV BX, OFFSET NUM1
+INT 6
+MOV AL, 2
+INT 7
+
+MOV CL, NUM1
+
+MOV BX, OFFSET MSJ
+MOV AL, OFFSET FIN-OFFSET MSJ
+INT 7
+
+MOV BX, OFFSET NUM2
+INT 6
+MOV AL, 2
+INT 7
+
+MOV DL, NUM2
+INT 0 
+END
+
+4.
+a.
+ORG 1000H
+A DB “HO LA”
+B DB ?
+ORG 2000H
+mov bx, offset A
+mov al, 4
+int 7
+int 0
+END
+
+imprime HO L debería ser mov al, 5 para que imprima todo
+
+b.ORG 1000H
+A DB “ARQ”
+B DB ?
+ORG 2000H
+mov al, 3
+mov bx, A
+int 7
+int 0
+END
+
+Esta mal, debería hacer mov bx, offset a y luego mov al, 3
+
+c.ORG 1000H
+A DB “HOLA”
+B DB ?
+ORG 2000H
+mov al, offset A - offset B
+mov bx, offset A
+int 7
+int 0
+END
+
+debería hacer mov al offset B - offset A
+
+d. ORG 1000H
+A DB ?
+ORG 2000H
+mov al, 3
+mov bx, A
+int 6
+int 0
+END
+
+para leer un carácter debería hacer mov bx offset A y para leer un carácter solo seria al,1.
+
+e. ORG 1000H
+A DB ?
+ORG 2000H
+int 6
+mov bx, offset A
+int 0
+END
+
+debería primero hacer mov bx y luego int 6
+
+f.ORG 1000H
+A DB ?
+ORG 2000H
+mov bx, A
+int 6
+mov al, 1
+int 7
+int 0
+END
+
+debería hacer mov bx offset a, luego int 6, mov ak, 1 int 7
+
+5
+Escribir un programa que muestre en pantalla las letras mayúsculas (“A” a la “Z”).
+Pista: Podés buscar los códigos de la “A” y la “Z” en una tabla de códigos ascii. No utilizar un vector. Usar
+una sola variable de tipo db, e incrementar el valor de esa variable antes de mostrar en pantalla.
+5A-41 en Hexa ( decimal 90-65= 25)
+
+	ORG 1000h
+	A DB 41h
+
+	ORG 2000h
+	mov bx, offset A
+	mov al, 1
+loop: 	int 7
+	inc A
+	CMP A, 5Bh
+	jnz loop
+	int 0
+end
+
+b)​ ¿Qué deberías modificar en a) para mostrar solamente los dígitos (“0” al “9”)?
+
+	ORG 1000h
+	num DB '0'
+
+	ORG 2000h
+	mov bx, offset num
+	mov al, 1
+  mov cl, 10
+loop: 	int 7
+	inc num
+  dec cl
+	jnz loop
+	int 0
+end
+
+c) ¿Y para mostrar todos los carácteres disponibles en el código ASCII? Probar en el simulador.
+	org 1000h
+	car db '0'
+	org 2000h
+	mov bx, offset car
+	mov al, 1
+	mov cx, 256
+loop:	int 7
+	inc car
+	dec cx
+	jnz loop
+	int 0
+end
+
+d) Modificar el ejercicio b) que muestra los dígitos, para que cada dígito se muestre en una línea separada.
+Pista: El código ASCII del carácter de nueva línea es el 10, comúnmente llamado “\n” o LF (“line feed” por sus siglas en inglés y porque se usaba en impresoras donde había que “alimentar” una nueva línea). Entonces, se puede imprimir el string “{c}\n”, que tiene longitud 2, donde {c} es el carácter a imprimir y \n es el carácter
+de nueva línea.
+
+	ORG 1000h
+	num DB '0', 0Ah
+
+	ORG 2000h
+	mov bx, offset num
+	mov al, 2
+  	mov cl, 10
+loop: 	int 7
+	inc num
+  dec cl
+	jnz loop
+	int 0
+end
+
+6) Lectura e impresión de strings ⭐⭐
+a) Escribir un programa que lea carácteres hasta que se ingrese el carácter “.” (punto). Contar la cantidad de carácteres ingresados y guardarla en la variable CANT.
+	org 1000h
+	cant db ?
+	char db ?
+	org 2000h
+	mov bx, offset char
+	mov cl, 0
+loop:	int 6
+	mov al, [bx]
+	cmp al, '.'
+	JZ fin
+	inc cl
+	jmp loop
+fin: 	mov cant, cl
+int 0
+end	
+
+b) Modificar a) para contar solamente la cantidad de letras “a” que se leen	
+	org 1000h
+	cant db ?
+	char db ?
+	org 2000h
+	mov bx, offset char
+	mov cl, 0
+loop:	int 6
+	mov al, [bx]
+	cmp al, '.'
+	JZ fin
+	cmp al, 'a'
+	JNZ noa
+	inc cl
+noa: jmp loop
+fin: 	mov cant, cl
+int 0
+end
+
+
+c) Modificar a) para almacenar los carácteres leídos en memoria como un string (sin incluir el “.”).
+	org 1000h
+	estrin db ?
+	org 2000h
+	mov bx, offset estrin
+loop:	int 6
+	mov al, [bx]
+	cmp al, '.'
+	jz fin
+	inc bx
+	jmp loop
+fin: 	int 0
+end
+
+
+d) Modificar c) para mostrar en pantalla el string leído luego de leerlo.
+
+
+	org 1000h
+	cant db ?
+	estrin db ?
+	org 2000h
+	mov bx, offset estrin
+	mov cl, 0
+loop:	int 6
+	mov al, [bx]
+	cmp al, '.'
+	jz fin
+	inc bx
+	inc cl
+	jmp loop
+fin: 	mov cant, cl
+	mov bx, offset estrin
+	mov al, cant
+	int 7
+int 0
+end
+
+//
+C) Modificar el programa anterior para enviar los parámetros A, B y C a través de la pila pero ahora por referencia.
+
+org 1000h
+A db 8
+B db 5
+C db 4
+D db ?
+
+org 3000h
+CALC: push bx
+      mov bx, sp
+      mov ax, bx
+      mov bx, [bx + 8]
+      mov dl, [bx]
+      mov bx, ax
+      mov bx, [bx + 6]
+      add dl, [bx]
+      mov bx, ax
+      mov bx, [bx + 4]
+      sub dl, [bx]
+      pop bx
+      ret
+
+
+org 2000h
+        mov AX, offset A
+        push AX
+        mov AX, offset B
+        push AX
+        mov AX, offset C
+        push AX
+        call CALC
+        mov D, DL
+        pop AX
+        pop AX
+        pop AX
+int 0
+end
+
+3) Operaciones con Carácteres
+Escribir un programa que lea un string, lo almacene en MENSAJE y convierta todos sus carácteres a minúscula. Por
+ejemplo, si MENSAJE contiene “Hola, Buenas Tardes”, luego de la conversión debe contener “hola, buenas tardes”.
+Mostrar en pantalla el mensaje luego de la conversión. Para ello, debe implementar y utilizar las siguientes subrutinas:
+1. 📄 ES_MAYUS ⭐ Recibe un carácter en el registro AL y retorna en AH el valor 0FFh si es mayúscula y 0
+de lo contrario. Pista: Los códigos de las mayúsculas son todos consecutivos. Buscar en la tabla ASCII los
+caracteres mayúscula, y observar qué valores ASCII tienen la ‘A’ y la ‘Z’.
+2. 📄 A_MINUS ⭐ Recibe un carácter mayúscula en AL y lo devuelve como minúscula. Pista: Las
+mayúsculas y las minúsculas están en el mismo orden en el ASCII, y por ende la distancia entre, por ejemplo,
+la “A” y la “a” es la misma que la distancia entre la “Z” y la “z”.
+3. 📄 STRING_A_MINUS ⭐⭐ Recibe la dirección de comienzo de un string en BX, su longitud en AL. Recorre el string, cambiando a minúscula las letras que sean mayúsculas. No retorna nada, sino que modifica el string directamente en la memoria.
+
+{; Entrada: AL = caracter
+; Salida: AH = FFh si es mayúscula, 0 en caso contrario
+; a = 61h y Z=7Ahorg 3020h
+; ME EQUIVOQUE PENSE QUE TENIA QUE DECIR SI ERA MINUSCULA
+ES_MINUS: cmp al, 61h
+	js no_min
+	cmp al, 7Bh
+	jns no_min
+	mov ah, 0FFh
+	jmp fin
+no_min: mov ah, 0
+	ret
+fin: ret}
+; Entrada: AL = caracter
+; Salida: AH = FFh si es mayúscula, 0 en caso contrario
+; A = 41h y Z=5Bh
+ORG 1000h
+	MENSAJE DB ?
+org 3000h
+ES_MAYUS:
+	cmp al, 41h
+    js no_mayus          ; si AL<'A', salta
+	
+	cmp al, 5Bh
+    jns no_mayus         ; si AL>'Z', salta (resultado >=0)
+
+    mov ah, 0FFh         ; está en el rango → es mayúscula
+    jmp fin
+
+no_mayus:
+    mov ah, 0
+    ret
+fin: ret
+; La A empieza en 41h y la a esta en 61h osea hay veinte entre medio
+ORG 3020
+A_MINUS: ADD AL, 20h
+	ret
+
+ORG 3030
+STRING_A_MINUS: push AX
+		push BX
+		push CX
+		mov CL, AL
+	loop:	mov AL, [BX]
+		CALL ES_MAYUS
+		cmp AH, 0FFh
+		JNZ sigo
+		CALL A_MINUS
+		mov [BX], AL
+	sigo:	inc bx 
+		dec cl
+		JNZ loop
+		pop cx
+		pop bx
+		pop ax
+		ret
+ORG 2000h 
+	mov AL, 0
+	mov BX, offset MENSAJE
+leo:	int 6
+	inc AL
+	cmp byte ptr [BX], 0Ah
+	JZ fin
+	inc BX
+	jmp loop
+fin:	mov bx, offset MENSAJE
+	CALL STRING_A_MINUS
+	int 7
+int 0
+end
+
+4) Multiplicación de números sin signo con parámetros
+El pasaje de parámetros más usual suele ser por valor y por registro. No obstante, en algunas ocasiones también se
+utilizan pasajes de parámetros más avanzados que permiten más flexibilidad o eficiencia.
+Escribir un programa que tenga dos valores de 8 bits A y B almacenados en su memoria y realice la multiplicación de A
+y B. El resultado se debe guardar en la variable RES de 16 bits, o sea que RES = A ⨯ B. Para hacerlo, implementar una
+subrutina MUL:
+:
+A. ⭐ Pasando los parámetros por valor desde el programa principal a través de los registros AL y AH, y
+devolviendo el resultado a través del registro AX por valor.
+
+
+A)
+org 1000h
+a db 2
+b db 3
+res dw ?
+
+	org 3000h
+MULT:	mov dx, 0
+	cmp al, 0
+	jz fin
+	mov cl, ah
+	mov ah, 0
+sigo:	add dx, ax
+	  dec cl
+  	jnz sigo
+	  jmp fin
+
+fin: 	mov ax, dx
+	ret
+
+
+org 2000h
+mov al, a
+mov ah, b
+call MULT
+mov res, ax
+int 0
+end
+
+
+B. ⭐⭐ Pasando los parámetros por referencia desde el programa principal a través de registros, y
+devolviendo el resultado a través de un registro por valor.
+
+org 1000h
+a db 2
+b db 4
+res dw ?
+
+	org 3000h
+MULT:	mov bx, cx
+	mov cl, [bx]
+	mov dx, 0
+	mov bx, ax
+	cmp byte ptr [bx], 0 
+	jz fin
+loop:	add dl, [bx]
+	dec cl
+	jz fin
+	jmp loop
+
+fin: mov ax, dx
+	ret
+
+
+org 2000h
+	mov ax, offset a
+	mov cx, offset b
+	call MULT
+  mov res, ax
+int 0
+end
+
+
+
+C. ⭐⭐ Pasando los parámetros por valor desde el programa principal a través de registros, y devolviendo el
+resultado a través de un registro por referencia.
+
+org 1000h
+a db 2
+b db 4
+res dw 0
+
+	org 3000h
+MULT:	mov dl, 0 
+      cmp al, 0
+	    jz fin
+loop:	add dl, al
+	dec cl
+	jz fin
+	jmp loop
+	
+
+fin: mov [bx], dl
+	ret
+
+
+org 2000h
+	mov al, a
+	mov cl, b
+	mov bx, offset res
+	call MULT
+int 0
+end
+
+D. ⭐⭐ Pasando los parámetros por valor desde el programa principal a través de la pila, y devolviendo el
+resultado a través de un registro por valor.
+
+org 1000h
+a db 2
+b db 4
+res db ?
+
+	org 3000h
+MULT:	push bx
+	mov bx, sp
+	add bx, 4
+	mov cl, [bx]
+	add bx, 2
+	mov dl, 0 
+loop:	add dl, [bx]
+	dec cl
+	jz fin
+	jmp loop	
+
+fin: 	pop bx 
+	mov al, dl
+	ret
+
+
+org 2000h
+	mov al, a
+	push ax
+	mov cl, b
+	push cx
+	call MULT
+	mov res, al
+  pop cx
+  pop ax
+int 0
+end
+
+
+E. ⭐⭐⭐ Pasando los parámetros por referencia desde el programa principal a través de la pila, y
+devolviendo el resultado a través de un registro por valor.
+
+
+org 1000h
+a db 2
+b db 4
+res db ?
+
+	org 3000h
+MULT:	push bx
+	mov bx, sp
+	add bx, 4
+	mov ax, bx
+	mov bx, [bx]
+	mov cl, [bx]
+	mov bx, ax
+	add bx, 2
+	mov dl, 0 
+	mov bx, [bx]
+loop:	add dl, [bx]
+	dec cl
+	jz fin
+	jmp loop	
+
+fin: 	pop bx 
+	mov al, dl
+	ret
+
+
+org 2000h
+	mov ax, offset a
+	push ax
+	mov cx, offset b
+	push cx
+	call MULT
+	mov res, al
+  pop cx
+  pop ax
+int 0
+end
+

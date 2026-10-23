@@ -1,0 +1,833 @@
+org 1000h
+cantPar dw 0
+cantImpar dw 0
+vector dw 50, 15, 25, 12, 3, 5, 4, 3, 1
+msjp db "Ganan los pares"
+msji db "Ganan los impares"
+finmsj db ?
+
+org 3000h
+espar: test ax, 01h
+       jz par
+       mov dx, 0
+       jmp fin
+  par: mov dx, 1
+  fin: ret
+
+org 3500h
+contarpares: push bx
+             push cx
+             push dx
+             mov bx, sp
+             mov cx, [bx  + 10]
+             mov bx, [bx + 8]
+        lup: mov ax, [bx]
+             call espar
+             cmp dx, 1
+             jnz impar
+             inc cantPar
+             jmp finps
+      impar: inc cantImpar
+      finps: add bx, 2
+             dec cx
+             jnz lup
+             mov ax, cantPar
+             pop dx
+             pop cx
+             pop bx
+             ret
+
+org 2000h
+mov cx, 9
+push cx
+mov bx, offset vector
+push bx
+call contarpares
+cmp ax, cantImpar
+js impargana
+mov bx, offset msjp
+mov al, offset msji - offset msjp
+jmp finpp
+impargana: mov bx, offset msji
+mov al, offset finmsj - offset msji
+finpp: int 7
+int 0
+end
+
+
+
+UN PROGRAMA PARA COMUNICARSE CON EL MIDI CADA 1 SEGUNDO
+
+
+PA EQU 30H
+PB EQU 31H
+CA EQU 32H
+CB EQU 33H
+EOI EQU 20H
+IMR EQU 21H
+INT1 EQU 25H
+CONT EQU 10H
+COMP EQU 11H
+ID_TIMER EQU 4
+
+ORG 16
+DW oneSec
+
+org 1000h
+;    0A  05 07  00 --> PARA PB
+D DB 10, 5, 7, 0
+;    3C  1E  50 --> PARA PA
+N DB 60, 30, 80
+flag DB 0
+
+org 3000h
+oneSec: push ax
+        inc flag
+        mov al, 0
+        out cont, al
+        mov al, eoi
+        out eoi, al
+        pop ax
+        iret
+
+org 2000h
+      cli
+      mov al, 0
+      out ca, al
+      out cb, al
+      mov al, 11111101b
+      out imr, al
+      mov al, id_timer
+      out int1, al
+      mov al, 1
+      out comp, al
+      mov al, 0
+      out cont, al
+      sti
+      mov bx, offset D
+      mov cx, offset N
+lup:  mov al, [bx]
+      cmp al, 0
+      jz chau
+wait: cmp flag, 1
+      jnz wait
+      mov flag, 0
+      out pb, al
+      inc bx
+      push bx
+      mov bx, cx
+      mov al, [bx]
+      out pa, al
+      inc bx
+      mov cx, bx
+      pop bx
+      jmp lup
+chau: out pb, al
+      mov al, 0FFH
+      out imr, al
+      int 0
+      end
+
+// reemplazar las letras de un msj ingresado finalizado por un puntp
+org 1000h
+len db 1
+carviejo db 'a'
+carnuevo db 'e'
+msjin db "ingrese el mensaje: ", 0ah
+msjsi db "Se sustituyeron caracteres", 0ah
+msjno db "No se sustituyeron caractres", 0ah
+msj db ?
+
+org 3000h
+REEMPLAZAR: mov cl, len
+            mov dl, 0
+loop:       mov ch, [bx]
+            cmp ch, ah
+            jnz nada
+            mov [bx], al
+            mov dl, 1
+nada:       inc bx
+            dec cl
+            jnz loop
+            ret
+
+org 2000h
+      mov bx, offset msjin
+      mov al, offset msjsi - offset msjin
+      int 7
+      mov bx, offset msj
+      mov al, '.'
+lup:  int 6
+      cmp [bx], al
+      jz chau
+      inc len
+      inc bx
+      jmp lup
+chau: mov bx, offset msj
+      mov ah, carviejo
+      mov al, carnuevo
+      call REEMPLAZAR
+      cmp dl, 1
+      jnz salto
+      mov bx, offset msjsi
+      mov al, offset msjno - offset msjsi
+      jmp listo
+salto: mov bx, offset msjno
+       mov al, offset msj - offset msjno
+listo: int 7
+      mov bx, offset msj
+      mov al, len
+      int 7
+      int 0
+      end
+
+
+
+/// juego memo test
+pb equ 31h
+cb equ 33h
+
+org 1000h
+msjnro db "ingrese el nro de la luz que nunca encendio", 0Ah
+ganaste db "Ganaste!"
+secuencia db 000000001b, 00000100b, 00000010b, 00001000b, 10000000b,00100000b,00010000b
+nopre db '6'
+luz db ?
+
+org 2000h
+mov al, 00h
+out cb, al
+mov cl, 7
+mov bx, offset secuencia
+lup: mov al, [bx]
+out pb, al
+inc bx
+dec cl
+jnz lup
+mov bx, offset msjnro
+mov al, offset ganaste - offset msjnro
+int 7
+mov bx, offset luz
+int 6
+mov dl, nopre
+cmp [bx], dl
+jnz fin
+mov bx, offset ganaste
+mov al, offset secuencia - offset ganaste
+int 7
+fin: int 0
+end
+
+//mati
+pa equ 30h
+pb equ 31h
+ca equ 32h
+cb equ 33h
+
+org 1000h
+msj1 db "buen dia", 0Ah
+msj2 db "adios", 0AH
+msj3 db ?
+
+org 3000h
+subA: push ax
+      not al
+      out pb, al
+      pop ax
+      ret
+
+org 3050h
+subB: test al, 80H
+      jz sigo
+      push ax
+      push bx
+      mov bx, offset msj1
+      mov al, offset msj2 - offset msj1
+      int 7
+      pop bx
+      pop ax
+sigo: ret
+
+org 3100h
+subC: cmp al, 0
+      jnz vamo
+      push ax
+      PUSH BX
+      mov bx, offset msj2
+      mov al, offset msj3 - offset msj2
+      int 7
+      POP BX
+      pop ax
+vamo: ret
+
+org 2000h
+      mov al, 0FFH
+      out ca, al
+      mov al, 0
+      out cb, al
+loop: in al, pa
+      call subA
+      call subB
+      call subC
+      cmp al, 0
+      jnz loop
+      int 0
+      end
+
+// ode
+pa equ 30h
+pb equ 31h
+ca equ 32h
+cb equ 33h
+
+org 1000h
+msj1 db "buen dia", 0Ah
+msj2 db "adios", 0AH
+msj3 db ?
+
+org 3000h
+subA: push ax
+      not al
+      out pb, al
+      pop ax
+      ret
+
+org 3050h
+subB: push ax
+      push bx
+      mov bx, offset msj1
+      mov al, offset msj2 - offset msj1
+      int 7
+      pop bx
+      pop ax
+ ret
+
+org 3100h
+subC: push ax
+      PUSH BX
+      mov bx, offset msj2
+      mov al, offset msj3 - offset msj2
+      int 7
+      POP BX
+      pop ax
+ret
+
+org 2000h
+      mov al, 0FFH
+      out ca, al
+      mov al, 0
+      out cb, al
+loop: in al, pa
+      call subA
+      test al, 10000000b
+      jz sigo
+      call subB
+      sigo: cmp al, 00h
+      jnz loop
+      call subC
+      int 0
+      end
+
+// otro
+eoi equ 20h
+imr equ 21h
+int0 equ 24h
+pb equ 31h
+cb equ 33h
+
+org 16
+dw intf10
+
+org 1000h
+cadena db "UNLP"
+flag db 0
+
+org 3000h
+intf10: push ax
+        inc flag
+        mov al, 0ffh
+        out imr, al
+        mov al, 20h
+        out eoi, al
+        pop ax
+        iret
+
+org 2000h
+cli
+mov al, 10h
+out imr, al
+mov al, 00h
+out cb, al
+mov al, 4
+out int0, al
+sti
+mov bx, offset cadena
+mov cl, offset flag - offset cadena
+salto: mov al, 0
+      out pb, al
+      mov al, [bx]
+      out pb, al
+      inc bx
+      dec cl
+      cmp flag, 1
+      jz fin
+      cmp cl, 0
+      jnz salto
+      fin: int 0
+      end
+
+////////eoi equ 20h
+imr equ 21h
+int0 equ 24h
+state equ 41h
+data equ 40h
+org 16
+dw intf10
+
+org 1000h
+cadena db "INGRESE UN NUMERO DEL 1 AL 9:", 0Ah
+dig db ?
+flag db 0
+
+org 3000h
+intf10: push ax
+        inc flag
+        mov al, 0ffh
+        out imr, al
+        mov al, 20h
+        out eoi, al
+        pop ax
+        iret
+
+org 3200h
+leerdigito: push ax
+            push bx
+      lup:  mov bx, offset cadena
+            mov al, offset dig - offset cadena
+            int 7
+            mov bx, offset dig
+            int 6
+            cmp BYTE PTR [bx], 3Ah
+            jns lup
+            cmp BYTE PTR [bx], 31h
+            js lup
+            pop bx
+            pop ax
+            ret
+
+org 3500h
+descender: push bx
+           push ax
+           mov bx, sp
+           mov bx, [bx + 6]
+           poll: in al, state
+           and al, 1
+           jnz poll
+           mov al, bl
+           out data, al
+           cmp al, '0'
+           jz fin
+           dec bl
+           jmp poll
+           fin: pop ax
+                 pop bx
+                 ret
+        
+
+org 2000h
+call leerdigito
+cli
+mov al, 11111110b
+out imr, al
+mov al, 4
+out int0, al
+sti
+loop: cmp flag, 0
+jnz loop
+mov bl, dig
+push bx
+call descender 
+int 0
+ret
+   end
+
+
+
+//////////
+eoi equ 20h
+imr equ 21h
+int0 equ 24h
+int1 equ 25h
+cont equ 10h
+comp equ 11h
+pb equ 31h
+cb equ 33h
+
+
+org 16
+dw intf10
+org 20
+dw intimer
+
+org 1000h
+cadena db "Hola!"
+flag db 0
+
+org 3000h
+intf10: push ax
+        inc flag
+        mov al, 0ffh
+        out imr, al
+        mov al, 20h
+        out eoi, al
+        pop ax
+        iret
+
+org 3500h
+intimer: mov al, [bx]
+        out pb, al
+        inc bx
+        dec cl
+        jz fin
+        mov al, 0
+        out cont, al
+        jmp chau
+    fin: mov al, 0
+        out pb, al
+        inc flag
+        mov al, 0ffh
+        out imr, al
+        chau:   mov al, 20h
+        out eoi, al
+       iret
+
+org 2000h
+cli
+mov al, 11111100b
+out imr, al
+mov al, 00h
+out cb, al
+mov al, 4
+out int0, al
+mov al, 5
+out int1, al
+mov al, 5
+out comp, al
+mov al, 0
+out cont, al
+sti
+mov bx, offset cadena
+mov cl, offset flag - offset cadena
+loop: cmp flag, 1
+jnz loop
+int 0
+   end
+
+
+////////
+pa equ 30h
+pb equ 31h
+ca equ 32h
+cb equ 33h
+
+
+org 1000h
+cadena db ?,?,?,?,?
+long db 5
+
+org 3000h
+inipio: push ax
+        mov al, 00h
+        out cb, al
+        mov al, 01h
+        out ca, al
+        pop ax
+        ret
+
+org 3200h
+flancas:push ax
+        in al, pa
+        and al, 11111101b
+        out pa, al
+        or al, 00000010b
+        out pa, al
+        pop ax
+ret
+
+org 3500h
+poll: push ax
+      in al, pa
+      test al, 01h
+      jnz poll
+      pop ax
+      ret
+
+org 3700h
+impcar: call poll
+        out pb, al
+        call flancas
+        ret
+
+org 2000h
+mov bx, offset cadena
+      call inipio
+salto: int 6
+       inc bx
+       dec long
+       jnz salto
+       mov bx, offset cadena
+  repe:mov al, [bx]
+        call impcar
+        inc bx
+        inc long
+        cmp long, 5
+        jnz repe
+int 0
+   end
+
+////
+pa equ 30h
+pb equ 31h
+ca equ 32h
+cb equ 33h
+eoi equ 20h
+imr equ 21h
+int1 equ 25h
+cont equ 10h
+comp equ 11h
+
+org 16
+dw intim
+
+org 1000h
+estado db ?
+flag db 0
+
+
+org 3000h
+luces12: push ax
+        push bx
+        mov bx, sp
+        mov bx, [bx + 6]
+        mov al, [bx]
+        test al, 10000000b
+        jz chau
+        mov al, 0ffh
+        out pb, al
+        mov al, 0
+        out cont, al
+        loop: cmp flag, 1
+        jnz loop
+        mov al, 00h
+        out pb, al
+        dec flag
+  chau: mov al, 20h
+        out eoi, al
+        pop bx
+        pop ax
+        ret
+
+org 3200h
+intim: push ax
+      inc flag
+      mov al, 20h
+      out eoi, al
+      pop ax
+      iret
+
+
+org 2000h
+cli
+mov al, 11111101b
+out imr, al
+mov al, 00h
+out cb, al
+mov al, 0ffh
+out ca, al
+mov al, 12
+out comp, al
+mov al, 4
+out int1, al
+sti
+repe: in al, pa
+mov estado, al
+mov bx, offset estado
+push bx
+call luces12
+jmp repe
+int 0
+   end
+
+/////////////
+
+eoi equ 20h
+imr equ 21h
+int2 equ 26h
+data equ 40h
+state equ 41h
+
+org 16
+dw inths
+
+org 1000h
+msj db "universidad nacional de la plata"
+flag db 0
+cant db offset flag - offset msj
+
+org 3200h
+inths: mov al, [bx]
+       out data, al
+       inc bx
+       dec cl
+       jnz fin
+       inc flag
+       mov al, 0ffh
+       out imr, al
+  fin: mov al, 20h
+       out eoi, al
+       iret
+
+
+org 2000h
+cli
+mov al, 11111011b
+out imr, al
+mov al, 4
+out int2, al
+in al, state
+or al,80h
+out state, al
+mov bx, offset msj
+mov cl, cant
+sti
+repe: cmp flag, 1
+      jnz repe
+int 0
+   end
+
+/////////
+
+eoi equ 20h
+imr equ 21h
+int1 equ 25h
+data equ 40h
+state equ 41h
+cont equ 10h
+comp equ 11h
+
+org 16
+dw intimer
+
+org 1000h
+msj db "ingrese 10 caracteres"
+flag db 0
+cadena db ?
+
+org 3000h 
+poll: push ax
+      in al, state
+      test al, 1
+      jnz poll
+      pop ax
+      ret
+
+org 3200h
+intimer: 
+        mov al, [bx]
+        call poll
+        out data, al
+        inc bx
+        dec cl
+        jnz fin
+        inc flag
+        mov al, 0ffh
+        out imr,al
+    fin: mov al, 0 
+        out cont,al
+        mov al, 20h
+        out eoi, al
+       iret
+
+
+org 2000h
+mov bx, offset msj
+mov al, offset flag - offset msj
+int 7
+mov cl, 10
+mov bx, offset cadena
+salto: int 6
+inc bx
+dec cl
+jnz salto
+cli
+mov al, 11111101b
+out imr, al
+mov al, 4
+out int1, al
+in al, state
+and al, 7fh
+out state, al
+mov al, 3
+out comp,al
+mov al, 0
+out cont, al
+sti
+mov bx, offset cadena
+mov cl, 10
+repe: cmp flag, 1
+      jnz repe
+int 0
+   end
+
+
+////
+EOI EQU 20H
+IMR EQU 21H
+INT0 EQU 24H
+PB EQU 31H
+CB EQU 33H
+ID EQU 5
+
+ORG 20
+DW SUBF
+
+ORG 1000H
+
+FLAG DB 0
+
+ORG 3200H
+SUBF: PUSH AX
+      INC FLAG
+      MOV AL, 20H
+      OUT EOI, AL
+      POP AX
+      IRET
+        
+ORG 3000H
+MOVERDERECHA: ADD AL,AL
+              ADC AL,0
+              INC CL
+              CMP CL, 7
+              JNZ MOVERDERECHA
+              OUT PB, AL
+              RET
+ORG 2000H
+CLI
+MOV AL, 11111110B
+OUT IMR, AL
+MOV AL, ID
+OUT INT0, AL
+MOV AL, 00H
+OUT CB, AL
+MOV AL, 80H
+OUT PB, AL
+MOV CL, 0
+STI
+REPE: CMP FLAG, 1
+JNZ REPE
+MOV FLAG,0
+CALL MOVERDERECHA
+MOV CL,0
+JMP REPE
+INT 0
+END

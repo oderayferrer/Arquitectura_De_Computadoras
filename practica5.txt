@@ -1,0 +1,166 @@
+PARTE 2 
+1C
+ORIGINAL:
+daddi $t1, $0, 5
+daddi $t2, $0, 7
+slt $t3, $t1, $t2
+daddi $t1, $0, 1
+and $t4, $t3, $t1
+daddi $t1, $t0, 8
+sd $t4, A($t1)
+
+
+NO SE PUEDE
+
+ld $t1, A($0)
+ld $t2, B($0)
+ld $t3, C($0)
+dsll $t1, $t1, 2
+dsub $t1, $t1, $t2
+dadd $t1, $t1, $t3
+sd $t1, R($0)
+
+PARTE 3 
+1
+
+ 		.data
+A: .word 1
+B: .word 2
+C: .word 0 # faltaba declarar este dato/variable
+ 		.code
+ 		ld $t1, A($0)
+ 		ld $t2, B($0)
+		daddi $t3, $0, 0
+ 		bne $t1, $t2, fin
+                daddi $t3, $0, 1
+ 		fin: 	sd $t3, C($0)
+ 		halt
+
+
+parte 4
+1)
+.data
+A: .word 1
+B: .word 2
+.code
+ld $t1, A($0)
+ld $t2, B($0)
+sd $t2, A($0)
+sd $t1, B($0)
+halt
+a)
+sin fowarding activado hay dos raw en la linea 3
+el CPI es: 4 + 5 instrucciones + 2 atascos raw / 5
+11/5
+b) no hay ningún atasco en este caso ya que ahora no habría que esperar a wb sino que cuando el dato se trae de memoria ya se dispone para su uso
+el cpi es 9/5
+
+2)
+.data
+A: .word 1
+B: .word 3
+C: .word 0
+
+.code
+ld $t1, A($0)		; $t1 = 1
+ld $t2, B($0)		; $t2 = n iteraciones = 3
+loop: dsll $t1, $t1, 1
+daddi $t2, $t2, -1
+bnez $t2, loop
+sd $t1, C($0)
+halt
+
+-​ ¿Qué instrucciones generan los atascos tipo RAW y por qué? ¿En qué etapa del cauce se produce el
+atasco en cada caso y durante cuántos ciclos?
+la linea tres genera un raw ya que necesita el $t1 y este aun no ha pasado por la etapa wb
+luego en la linea 5 se genera dos raw debido a que el $t2 aun no ha pasado por la etapa wb 
+cada vez que se ejecute la linea 5 va a haber un dos raw
+es decir en total hay 6 raw de la linea 5 (por las repeticiones) y un raw al inicio, en total 7 
+cpi: 4 + 15 ciclos + 7 raw / 13 instrucciones = 26/13 = 2 
+
+-​ Cambiar el valor de B a 1000 y ejecutar. ¿Cómo cambió la cantidad de CPIs?
+el cpi es 2 también
+6008 ciclos / 3004 instrucciones
+
+b) Loop con forwarding Ejecutar el programa con Forwarding habilitado y responder:
+-​ ¿Cuántos CPI tiene la ejecución de este programa? Tomar nota del número de ciclos, cantidad de instrucciones y CPI. Comparar con el caso anterior.
+ ciclos 22
+instrucciones 13
+22/13 = 1,692 cilos por instruccion
+
+-​ Cambiar el valor de B a 1000 y ejecutar. ¿Cómo cambió la cantidad de CPIs?
+5007 ciclos
+3004 instrucciones
+1,667 ciclos por instrucción
+
+c) Reordenamiento de instrucciones para optimización de CPI:
+-​
+ Reordenar las instrucciones para que la cantidad de RAW sea 0 en la ejecución del programa,
+ejecutando con Forwarding habilitado y B=3.
+
+.data
+A: .word 1
+B: .word 3
+C: .word 0
+
+.code
+ld $t1, A($0)		; $t1 = 1
+ld $t2, B($0)		; $t2 = n iteraciones = 3
+loop: daddi $t2, $t2, -1
+dsll $t1, $t1, 1
+bnez $t2, loop
+sd $t1, C($0)
+halt
+
+-​ Cambiar el valor de B a 1000 y ejecutar. ¿Cómo cambió la cantidad de CPIs?
+
+4008 ciclos
+3004 instrucciones
+1,334 CPI
+
+-​ En base a lo anterior ¿qué partes del programa conviene optimizar generalmente?
+
+Lo más importante es que las instrucciones que se van repetir muchas veces no generen atascos. Normalmente esto (y en general, cualquier atasco) se evita separando las instrucciones que estén conectadas, poniendo en el medio otras que no tengan nada que ver.
+
+3. Optimización de CPI
+ ⭐⭐⭐
+El siguiente programa copia un arreglo de src a dest.
+
+ .data
+
+ src: .word 1, 2, 3, 4, 5, 6, 7, 8
+dest: .space 64
+.text
+ daddi $t0, $0, 12
+ daddi $t3, $0, src
+ daddi $t2, $0, dest
+ loop: ld $t1, 0($t3)
+ sd $t1, 0($t2)
+daddi $t3, $t3, 8
+daddi $t2, $t2, 8 
+daddi $t0, $t0, -1
+bnez $t0, loop
+halt
+a) Ejecute el programa con forwarding habilitado. ¿Cuántos atascos ve? ¿Cuál es el CPI?
+6 atascos en el loop
+el cpi es 
+103 ciclos
+76 instrucciones
+1.355 cpi
+b) Únicamente reordenando instrucciones, ¿puede lograr eliminar todos los atascos RAW?
+si
+ .data
+
+ src: .word 1, 2, 3, 4, 5, 6, 7, 8
+dest: .space 64
+.text
+ daddi $t0, $0, 12
+ daddi $t3, $0, src
+ daddi $t2, $0, dest
+ loop: daddi $t0, $t0, -1
+ld $t1, 0($t3)
+sd $t1, 0($t2)
+daddi $t3, $t3, 8
+daddi $t2, $t2, 8 
+bnez $t0, loop
+halt

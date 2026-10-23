@@ -1,0 +1,346 @@
+1)
+.data
+A: .word 1
+B: .word 3
+C: .word 0
+.code
+ld $t1, A($0)
+ld $t2, B($0)
+loop: dsll $t1, $t1, 1
+daddi $t2, $t2, -1
+bnez $t2, loop
+sd $t1, C($0)
+halt
+
+a) cpi 1.692 2 atascos BTS 3 raw
+b) cpi 1.667 1000 raw 999 bts
+
+
+.data
+A: .word 1
+B: .word 1000
+C: .word 0
+.code
+ld $t1, A($0)
+ld $t2, B($0)
+loop: dsll $t1, $t1, 1
+daddi $t2, $t2, -1
+bnez $t2, loop
+sd $t1, C($0)
+halt
+
+ ¿Por qué se producen los BTS? ¿Qué sucede con la instrucción siguiente al salto?
+Los BTS se producen debido a que a la hora de saltar si no se encuentra en la BTB (tabla) se pierde un ciclo de fallo de predicción y otro para actualizar la BTB esto toma 2 branch taken
+
+ ¿Pueden evitarse los BTS reordenando instrucciones?
+No, debido a que este fallo se produce al saltar, no hay posibilidad de cambiar el orden de las líneas para evitarlo
+
+Al ocurrir un BTS, una instrucción se empieza a ejecutar y luego se descarta, pero ¿debe contarse
+como una instrucción para el cálculo del CPI?
+Si, deben contarse, cada bts suma dos ciclos a cpi
+
+2) Reducción de BTS con Branch Target Buffer
+ ⭐
+Habilitar la opción Branch Target Buffer (BTB) y volver a ejecutar el programa anterior con B=3.
+1.​ ¿Cómo cambió la cantidad de BTS? ¿y el CPI?
+Los bts siguen siendo dos, el cpi ahora es 1.846, es decir aumento 0,200
+2.​ Notar que ahora aparece un nuevo tipo de atasco, llamado Branch Misprediction Stall (BMS). ¿Por
+qué sucede? ¿Cuántos ocurren?
+Estos atascos BMS suceden cuando no se realiza el salto, se pierde un ciclo de fallo de la predicción y un ciclo de actualizar BTB ósea 2 BTS
+3.​ Cambiar el valor de B a 1000, habilitar BTB y ejecutar. ¿Cómo cambió la cantidad de BTS y BMS? ¿y
+el CPI?
+BMS y BTS siguen siendo dos cada uno, debido a que en la primera iteración se pierden dos ciclos BTS y en la ultima 2 ciclos BMS
+4.​ Completar la siguiente frase: Al ejecutar un loop simple con N iteraciones, si se habilita BTB, se
+producen -2- atascos de tipo BTS y -2- atascos de tipo BMS.
+5.​ En base a los resultados anteriores ¿es mejor utilizar BTB cuando se realizan pocas o cuando se
+realizan muchas iteraciones?
+Es mejor utilizar BTB cuando se realizan muchas iteraciones, ya que si por ejemplo lo utilizaramos para dos, se perdería mas tiempo por fallo de predicción y actualización de BTB que otra cosa
+
+3) Utilidad del BTB en distintos casos
+ ⭐
+El BTB puede aumentar el desempeño significativamente en la mayoría de los lazos. No obstante, en algunos
+puede tener un comportamiento patológico y de hecho reducir la eficiencia del programa. El siguiente
+programa calcula el máximo de un vector.
+
+.data
+A: .word 2,1,3,1,4,1
+MAX: .word -1
+.code
+ld $t1, MAX($0)
+daddi $t2, $0, 0
+daddi $t3, $0, 6
+loop: ld $t4,A($t2)
+slt $t5,$t1,$t4
+beqz $t5, chico # 6 BTS y 4 BMS
+daddi $t1,$t4,0
+chico: daddi $t2,$t2,8
+daddi $t3, $t3, -1
+bnez $t3, loop #BTS primera y BMS ultima
+sd $t1, MAX($0)
+halt
+
+a)​b)​Antes de ejecutar en el simulador, encontrar las instrucciones de salto, y pensar cómo se comportará
+el BTB en cada caso. Recordar que la predicción del BTB guarda un bit de historia distinto por cada instrucción de salto.
+Ejecutar el programa en el simulador con y sin BTB. ¿Qué programa es más eficiente?
+Con BTB : se generan 8 BTS y 6 BMS
+Sin BTB: se generan 11 BTS
+
+Parte 2: Reducción de Atascos por Salto con Delay Slot
+1) Reducción de BTS con Delay Slot (DS)
+ ⭐⭐
+sin mejoras:
+.data
+A: .word 1
+B: .word 3
+C: .word 0
+.code
+ld $t1, A($0)
+ld $t2, B($0)
+loop: dsll $t1, $t1, 1
+daddi $t2,$t2,-1
+bnez $t2, loop
+sd $t1, C($0)
+halt
+
+
+cpi: 7raw + 2BTS + 4 + 13 / 13 = 26/13 =2
+
+con btb activado:
+.data
+A: .word 1
+B: .word 3
+C: .word 0
+.code
+ld $t1, A($0)
+ld $t2, B($0)
+loop: dsll $t1, $t1, 1
+daddi $t2,$t2,-1
+bnez $t2, loop #2BTS primera vuelta + 2 BMS en la ultima y 7 raws
+sd $t1, C($0)
+halt
+
+cpi: 13 + 4+  4bmsybts + 7 raw / 13 = 28/13
+
+con ds:
+
+.data
+A: .word 1
+B: .word 3
+C: .word 0
+.code
+ld $t1, A($0)
+ld $t2, B($0)
+loop: dsll $t1, $t1, 1
+daddi $t2,$t2,-1
+bnez $t2, loop
+sd $t1, C($0)
+halt
+
+cpi : 15 + 4 + 7 raw / 15 = 26/15 = 1,733
+
+con ds y nop:
+
+.data
+A: .word 1
+B: .word 3
+C: .word 0
+.code
+ld $t1, A($0)
+ld $t2, B($0)
+loop: dsll $t1, $t1, 1
+daddi $t2,$t2,-1
+bnez $t2, loop
+nop
+sd $t1, C($0)
+halt
+
+ds y reordenamiento
+
+.data
+A: .word 1
+B: .word 3
+C: .word 0
+.code
+ld $t2, B($0)
+ld $t1, A($0)
+loop: daddi $t2,$t2,-1
+bnez $t2, loop
+dsll $t1, $t1, 1
+sd $t1, C($0)
+halt
+
+13 + 4 + 9 = 26/13 = 2
+
+2) Corrección de programas con Delay Slot
+ ⭐⭐⭐
+En el programa anterior, habilitar DS hace que una instrucción se ejecute varias veces. Si bien el programa es
+más ineficiente, el resultado final es el mismo. No obstante, en otros casos habilitar DS puede hacer que el
+programa no funcione correctamente. Por ejemplo, analizar el siguiente programa:
+
+.data
+A: .word 2,1,3,1,4,1
+MAX: .word -1
+.code
+	ld $t1, MAX($0)
+	daddi $t2, $0,0
+	daddi $t3,$0,6
+loop:	ld $t4, A($t2)
+	slt $t5, $t1,$t4
+	beqz $t5, chico
+	daddi $t1, $t4, 0
+chico:	daddi $t2, $t2, 8
+	daddi $t3, $t3, -1
+	bnez $t3, loop
+	sd $t1, MAX($0)
+halt
+
+a)​Correr el programa con DS habilitado y anotar el CPI. Notar el resultado almacenado en la variable
+MAX ¿Por qué es incorrecto?
+cpi:  93/52 = 1,788
+es incorrecto ya que al tener el delay slot activado, cada iteración en vez de saltar a chico va a ejecutar la siguiente linea en la que guarda en t1 el contenido de t4, como el ultimo elemento del vector es 1, ese es el que queda almacenado al final del programa
+
+b)​Reordenar las instrucciones del programa para que funcione correctamente, y para que además la
+instrucción sd $t1, MAX($0) solo se ejecute una vez, sin agregar instrucciones a ejecutar. Anotar el
+CPI, y comparar con el caso anterior ¿qué mejora se obtuvo?
+.data
+A: .word 2,1,3,1,4,1
+MAX: .word -1
+.code
+	daddi $t2, $0,0
+	ld $t1, MAX($0)
+	daddi $t3,$0,6
+loop:	ld $t4, A($t2)
+	slt $t5, $t1,$t4
+	beqz $t5, chico
+	daddi $t3, $t3, -1
+	daddi $t1, $t4, 0
+chico:  daddi $t2, $t2, 8
+	bnez $t3, loop
+	sd $t1, MAX($0)
+halt
+
+cpi: 80/49= 1,633
+hubo una mejora de 0,155 cpi
+es decir me ahorro 3 instrucciones y 13 errores pero se guarda sd $t1, MAX($0) en cada iteración
+
+este sin repetir todas las vueltas sd $t1, MAX($0)
+.data
+A: .word 2,1,3,1,4,1
+MAX: .word -1
+.code
+	ld $t1, MAX($0)
+	daddi $t2, $0,0
+	daddi $t3,$0,6
+loop:	ld $t4, A($t2)
+	slt $t5, $t1,$t4
+	beqz $t5, chico
+	daddi $t3, $t3, -1
+	daddi $t1, $t4, 0
+chico:  bnez $t3, loop
+	daddi $t2, $t2, 8
+	sd $t1, MAX($0)
+halt
+
+
+
+en este me da 92/44 = 2.091
+el programa funciona correctamente sin agregar instrucciones ni repetir sd $t1, MAX($0)
+ todas las vueltas, aunque no presenta una mejora en cuanto a cpi
+
+1.​ Estudiar el código sin simularlo y responder ¿cuál es el programa que tiene WAR y cual WAW?
+Simular los programas para comprobar.
+2.​ En el caso del WAR, ¿cuál es la instrucción lenta y cuál la rápida? ¿Qué registro se quiere leer y
+escribir?
+3.​ Idem para el caso WAW.
+
+
+.code
+dmul $t1, $0, $0
+dmul $t3, $t1, $t2 } hay atascos war entre esta linea y la siguiente porque      ambas utilizan t2
+		     la instrucción lenta es el dmul y dadd es mas rápida se quiere leer t2 en la instrucción mas lenta y escribirlo en la mas rapida
+dadd $t2, $0, $0
+halt
+
+
+ .code
+ddiv $t1, $t2, $t3
+dadd $t1, $t2, $t3
+halt
+ este tiene waw ya que ambos quieren escribir sobre el mismo registro
+ ddiv es mas lenta que dadd
+
+2) Atascos estructurales STR
+
+a)​ Ejecutar el código anterior con forwarding activado y verificar que ocurre un atasco STR. ¿Entre qué
+instrucciones sucede el atasco? ¿cuál es la instrucción que se atasca? ¿Por qué esa y no la otra?
+b)​ Probar agregando un NOP ¿sigue el atasco? ¿y si se quita un NOP? ¿por qué?
+
+.code
+dmul $t1, $0, $0
+nop
+nop
+nop
+nop
+nop
+dadd $t2,$0,$0
+halt
+
+entre el dmul y el dadd ya que ambos quieren acceder a mem al mismo tiempo
+no se atasca la dmul porque la primera en llegar "gana"
+
+b)
+.code
+dmul $t1, $0, $0
+nop
+nop
+nop
+dadd $t2,$0,$0
+halt
+asi no generaría atascos estructurales, sacándole dos nop, si le agrego o saco solo uno sigue habiendo porque habrá instrucciones queriendo acceder a mem al mismo tiempo
+
+3) Análisis de atascos
+ ⭐⭐
+Los siguientes programas presentan ejemplos naturales de atascos estructurales y WAR. Analizar e
+identificar dónde pueden ocurrir estos atascos. Ejecutar en el simulador con forwarding activado y
+comprobar el resultado.
+
+.code
+daddi $t1, $0, 30
+daddi $t2, $0, 4
+ddiv $t3, $t1,$t2
+dmul $t3,$t3,$t2
+dsub $t4, $t1, $t3} hay un str aca porque quiere acceder a mem y la instrucción 		    dmul esta utilizandola
+halt
+
+4) ejercicios tipo examen
+1)Análisis de atascos con lazos
+ ⭐⭐⭐
+El siguiente programa calcula la suma del arreglo A y almacena el resultado en la variable SUM. Calcular la
+cantidad de instrucciones, atascos y ciclos totales que toma el programa, y los CPIs, sin utilizar el
+simulador, asumiendo BTB/DS desactivados, y:
+a)​Asumiendo forwarding desactivado
+
+b)​Asumiendo forwarding activado.
+c)​En el caso a), ¿qué sucedería si la instrucción daddi $t2,$0,0 se intercambia por daddi $t3,$0,3?
+Verificar los resultados con el simulador en cada caso.
+.data
+V: .word 5,2,6
+SUM: .word 0
+.code
+
+daddi $t0, $0, 0
+
+ld $t1,V($t0)
+daddi $t0, $0, 8
+ld $t2,V($t0)
+daddi $t0, $0, 16
+ld $t3,V($t0)
+
+dadd $t4, $t1, $t2
+dadd $t4, $t4, $t3
+
+sd $t4, SUM($0)
+
+halt
+
+

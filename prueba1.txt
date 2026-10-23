@@ -1,0 +1,21 @@
+
+.data
+V: .word 1,2,3,4,5,6,7,8,9,10
+W: .space 80
+.code
+daddi $t0, $0, V
+daddi $t1, $0, W
+daddi $t2, $0, 10
+daddi $t3, $0,1 # mascara 1 pa ver si es impar
+loop:	beqz $t2, fin
+	ld $t4, 0($t0)
+	and $t6, $t4, $t3
+	beqz $t6, noguardo
+	sd $t4, 0($t1)
+	daddi $t1, $t1, 8
+noguardo:	daddi $t0, $t0, 8
+		daddi $t2,$t2,-1
+	j loop
+fin: halt
+	
+	

@@ -1,0 +1,620 @@
+6. Recorrido básico de vectores ⭐ Dado un vector definido como: V: .word 5, 2, 6
+a)Calcular la suma de los 3 valores sin utilizar un loop o lazo
+.data
+V: .word 5,2,6
+SUM: .word 0
+.code
+
+daddi $t0, $0, 0
+
+ld $t1,V($t0)
+daddi $t0, $0, 8
+ld $t2,V($t0)
+daddi $t0, $0, 16
+ld $t3,V($t0)
+
+dadd $t4, $t1, $t2
+dadd $t4, $t4, $t3
+
+sd $t4, SUM($0)
+
+halt
+
+b) Calcular la suma de los 3 valores utilizando un lazo con la dirección base y un registro como desplazamiento
+.data
+V: .word 5,2,6
+SUM: .word 0
+.code
+	daddi $t2, $0, 0
+	daddi $t0, $0, 3
+	daddi $t3, $0, 0
+loop:   ld $t1, V($t2)
+	dadd $t3,$t3,$t1
+	daddi $t2,$t2,8
+	daddi $t0, $t0, -1
+	bnez $t0, loop
+	sd $t3, SUM($0)
+	halt
+c)
+.data
+V: .word 5,2,6
+sum: .word 0
+.code
+
+daddi $t0, $0, V
+daddi $t1, $0, 3
+daddi $t2, $0, 0
+loop: ld $t3, 0($t0)
+      dadd $t2, $t2, $t3
+      daddi $t0, $t0, 8
+      daddi $t1, $t1, -1
+      bnez $t1, loop
+sd $t2, sum($0)
+halt
+
+9. Operaciones con strings ⭐⭐
+a) Longitud de un string Escribir un programa que cuente la longitud de un string iterando el mismo hasta llegar al
+valor 0 y guarde el resultado en una variable llamada LONGITUD. Probarlo con el string “ArquiTectuRa de
+ComPutaDoras”.
+
+a)
+.data
+cadena: .asciiz "Arquitectura de ComPutaDoras"
+longitud: .word 0
+
+.code
+daddi $t0, $0, cadena
+daddi $t1, $0, 0
+
+loop: lbu $t2, 0($t0)
+      beqz $t2, fin
+      daddi $t1, $t1, 1
+      daddi $t0, $t0, 1
+      j loop
+fin: sd $t1, longitud($0)
+halt
+
+b)Contar apariciones de carácter Escribir un programa que cuente la cantidad de veces que un determinado carácter
+aparece en una cadena de texto.
+.data
+cadena: .asciiz "adbdcdedfdgdhdid" 
+car: .ascii "d" 
+cant: .word 0 
+
+.code
+
+daddi $t0, $0, cadena
+lbu $t1, car($0)
+daddi $t2, $0, 0
+
+loop: lbu $t3, 0($t0)
+      beqz $t3, chau
+      bne $t3, $t1, noigual
+      daddi $t2, $t2, 1
+noigual: daddi $t0, $t0, 1
+	j loop
+chau: sd $t2, cant($0)
+halt
+
+c) Contar mayúsculas Escribir un programa que cuente la cantidad de letras mayúsculas de un string. Probarlo con el
+string “ArquiTectuRa de ComPutaDoras”. Pista: El código ASCII de la “A” es 65, y el de la “Z” es 90.
+
+.data
+cadena: .asciiz "ArquiTectuRa de ComPutaDoras"
+cont: .word 0
+
+.code
+daddi $t0, $0, cadena
+daddi $t3, $0, 0
+loop: lbu $t1, 0($t0)
+      beqz $t1, chau
+      slti $t2, $t1, 65
+      bnez $t2, noM
+      slti $t2,$t1, 91
+      beqz $t2, noM
+      daddi $t3, $t3, 1
+noM:  daddi $t0, $t0, 1
+      j loop
+chau: sd $t3, cont($0)
+halt
+
+d)Generar string Escribir un programa que genere un string de la siguiente forma: “abbcccddddeeeee….”, así hasta la
+letra “h”. Para ello debe utilizar un loop e ir guardando los códigos ascii en la memoria. El string debe finalizar con el
+valor ascii 0 para que esté bien formado (debe agregar un elemento más, que valga 0, al final del string) a en dec 97
+
+.data
+cadena: .space 40
+
+.code
+daddi $t0, $0, cadena
+daddi $t1, $0, 1
+daddi $t2, $0, 9
+
+daddi $t3, $0, 97
+
+lup: beq $t1, $t2, fin
+     daddi $t4, $t1, 0
+loop:beqz $s4, fin1
+     sb $t3, 0($t0)
+     daddi $t0,$t0,1
+     daddi $t4, $t4, -1
+     j loop
+fin1:	daddi $t3, $t3, 1
+ 	daddi $t1,$t1,1
+	j lup
+fin: sb $0, 0($t0)
+halt
+
+
+2. Operaciones con vectores ⭐
+Definir un vector con 10 valores , y escribir programas para:
+a) Contar positivos. Contar la cantidad de elementos positivos, y guardar la cantidad en una variable llamada POS.
+
+
+.data
+vec: .word 4,-1,2,-2,3,-3,1,-4,5,7
+pos: .word 0
+.code
+daddi $t0, $0, vec #direc de vec
+daddi $t1,$0,0 #cont elem pos
+daddi $t2,$0,10 # cant elem
+
+
+loop:	beqz $t2, fin
+	daddi $t2, $t2, -1
+	ld $t3, 0($t0)
+        slti $t4, $t3, 0
+	bnez $t4, sigo
+	daddi $t1,$t1,1
+sigo:   daddi $t0, $t0, 8
+	j loop
+
+fin: 	sd $t1, pos($0)
+halt
+
+b) Calcular máximo. Calcular el máximo elemento del vector y guardarlo en una variable llamada MAX
+
+.data
+vec: .word 1,3,5,15,26,6,8,12,9,10
+max: .word 0
+
+.code
+
+daddi $t0, $0, vec
+daddi $t1, $0, 10 #cant de elem
+daddi $t2, $0, -1 #guardo el max aca
+
+loop: 	beqz $t1, fin
+	daddi $t1, $t1, -1
+	ld $t3, 0($t0)
+	slt $t4, $t2, $t3
+	beqz $t4, sigo
+	dadd $t2, $t3,$0
+sigo:   daddi $t0, $t0, 8
+	j loop
+fin: sd $t2, max($0)
+halt
+
+
+c) Modificar valores Modificar los elementos del vector, de modo que cada elemento se multiplique por 2.
+
+.data
+vec: .word 1,2,3,4,5,6,7,8,9,10
+
+.code
+daddi $t0, $0, vec
+daddi $t1, $0, 10
+daddi $t3, $0, 2
+loop:	beqz $t1, fin
+	daddi $t1, $t1, -1
+	ld $t2, 0($t0)
+	dmul $t2, $t2, $t3
+	sd $t2, 0($t0)
+	daddi $t0, $t0, 8
+	j loop
+fin: halt
+
+d) Impares Generar un vector con los primeros 10 números impares.
+
+.data
+vec: .space 40
+
+.code
+daddi $t0, $0, vec
+daddi $t1, $0, 10
+daddi $t2, $0, 1
+
+loop:	beqz $t1, fin
+	daddi $t1, $t1, -1
+	sd $t2, 0($t0)
+	daddi $t2, $t2, 2
+	daddi $t0, $t0, 8
+	j loop	
+fin: halt
+
+e) Fibonacci Generar un vector con los primeros 10 números de la secuencia de Fibonacci
+.data
+vec: .space 80
+dim: .word 8
+
+.code
+daddi $t0, $0, vec
+ld $t1, dim($0)
+daddi $t2, $0, 1
+daddi $t3, $0, 1
+sd $t2, 0($t0)
+daddi $t0,$t0,8
+sd $t3, 0($t0)
+daddi $t0,$t0,8
+loop:	beqz $t1, fin
+	daddi $t1, $t1, -1
+	dadd $t4, $t2,$t3
+	sd $t4, 0($t0)
+	daddi $t2, $t3, 0
+	daddi $t3, $t4, 0
+	daddi $t0, $t0, 8
+	j loop
+fin: halt
+
+.data
+vec: .space 80
+dim: .word 8
+
+.code
+daddi $t0, $0, vec
+ld $t1, dim($0)
+daddi $t2, $0, 1
+daddi $t3, $0, 1
+sd $t2, 0($t0)
+daddi $t0,$t0,8
+sd $t3, 0($t0)
+daddi $t0,$t0,8
+loop:	beqz $t1, fin
+	daddi $t1, $t1, -1
+	dadd $t4, $t2,$t3
+	sd $t4, 0($t0)
+	daddi $t2, $t3, 0
+	daddi $t3, $t4, 0
+	daddi $t0, $t0, 8
+	j loop
+fin: halt
+
+f) Vector de impares a partir de vector Definir un vector V con 10 números cualesquiera. Escribir un programa que
+genere un vector W con los números impares de V.
+
+.data
+V: .word 1,2,3,4,5,6,7,8,9,10
+W: .space 80
+.code
+daddi $t0, $0, V
+daddi $t1, $0, W
+daddi $t2, $0, 10
+daddi $t3, $0,1 # mascara 1 pa ver si es impar
+loop:	beqz $t2, fin
+	ld $t4, 0($t0)
+	and $t6, $t4, $t3
+	beqz $t6, noguardo
+	sd $t4, 0($t1)
+	daddi $t1, $t1, 8
+noguardo:	daddi $t0, $t0, 8
+		daddi $t2,$t2,-1
+	j loop
+fin: halt
+	
+3. Subrutinas de Strings ⭐⭐
+Implemente subrutinas típicas para manipular strings, de modo de tener construir una pequeña librería de código
+reutilizable.
+a) longitud: Recibe en $a0 la dirección de un string y retorna su longitud en $v0
+
+longitud: daddi $t0, $a0, 0
+daddi $v0, $0, 0
+
+loop: lbu $t1, 0($t0)
+	beqz $t1, fin
+	daddi $v0, $v0, 1
+	daddi $t0, $t0, 1
+	j loop
+fin:	jr $ra
+
+b) contiene: Recibe en $a0 la dirección de un string y en $a1 un carácter (código ascii) y devuelve en $v0 1 si el string contiene el carácter $a1 y 0 de lo contrario.
+
+contiene:
+	daddi $t0, $a0, 0
+	daddi $v0, $0, 0
+
+loop:   lbu $t2, 0($t0)
+	beqz $t2, fin
+	beq $t2, $a1, igual
+	daddi $t0, $t0, 1
+	j loop
+igual: daddi $v0, $0, 1
+fin: jr $ra
+
+c) es_vocal: Determina si un carácter es vocal o no, ya sea mayúscula o minúscula. La rutina debe recibir el carácter y
+debe retornar el valor 1 si es una vocal ó 0 en caso contrario. Para implementar es_vocal, utilizar la subrutina
+contiene, de modo que para preguntar si un carácter es una vocal, se pregunte si un string con todas las vocales posibles contiene a este carácter.
+.data
+vocales:    .asciiz "aeiouAEIOU"
+
+# recibe un char en $a0 y devuelve en $v0 1 si es vocal, y 0 si no lo es
+es_vocal:	daddi $sp, $sp, -8
+	 	sd $ra, 0($sp)
+		daddi $a1, $a0,0
+		jal contiene
+		ld $ra, 0($sp)
+		daddi $sp,$s-, 8
+		jr $ra
+
+
+d) cant_vocales Usando la subrutina escrita en el ejercicio anterior, cant_vocales recibe una cadena terminada en
+cero y devuelve la cantidad de vocales que tiene esa cadena.​
+
+.data
+vocales:    .asciiz "aeiouAEIOU"
+
+cantvocales: 
+	daddi $sp, $sp, -24
+	sd $ra, 0($sp)
+	sd $s0,8($sp)
+	sd $s1,16($sp)
+	
+	daddi $s0, $0, 0
+	daddi $s1, $a0, 0
+
+loop:	lbu $a0,0($s1)
+	beqz $a0, fin
+	jal es_vocal
+	dadd $s0,$s0,$v0
+	daddi $s1,$s1,1
+	j loop
+fin:	daddi $v0, $s0, 0
+	
+	ld $ra, 0($sp)
+	ld $s0, 8($sp)
+	ld $s1, 16($sp)
+	daddi $sp,$sp,24
+jr $ra
+
+e) comparar: Recibe como parámetros las direcciones del comienzo de dos cadenas terminadas en cero y retorna la
+posición en la que las dos cadenas difieren. En caso de que las dos cadenas sean idénticas, debe retornar -1.
+
+comparar:	
+	daddi $t0, $0, 1
+	daddi $v0, $0, -1
+loop: lbu $t1, 0($a0)
+	lbu $t2,0($a1)
+	bne $t1,$t2, noigual
+	beqz $t1, fin
+	daddi $t0, $t0,1
+	daddi $a0, $a0, 1
+	daddi $a1,$a1,1
+	j loop
+noigual:daddi $v0, $t0, 0
+fin: jr $ra
+
+3.f) Usando las subrutinas anteriores, implemente un programa que defina dos strings A y B. Luego, compare los dos strings. Si son iguales, almacenar el valor -1 en la variable RES. De lo contrario, calcule la cantidad de vocales del string más largo de los dos, y almacene el valor también en esa variable. Ejemplo, si A no es igual B, pero A es más largo que B, contar la cantidad de vocales de A.​
+        .data
+A:      .asciiz "Probando"
+B:      .asciiz "los strings"
+RES:    .word 0
+.code
+
+daddi $a0, $0, A
+daddi $a1, $0, B
+jal comparar
+slti $t0, $v0, 0
+beqz $t0, noigual
+j listo
+
+noigual: daddi $a0, $0, A
+	jal longitud
+	daddi $s0, $v0, 0
+	daddi $a0, $0, B
+	jal longitud
+	slt $t0, $v0,$s0
+	bnez $t0, Bgrande
+	daddi $a0, $0, A
+	j contar
+Bgrande: daddi $a0, $0, B
+contar: jal cantvocales
+listo: sd $v0, RES($0)
+halt
+
+4. Subrutinas con vectores
+ ⭐⭐
+a) suma
+ Escribir una subrutina que reciba como argumento en $a0 la dirección de una tabla de números enteros de
+64 bits, y en $a1 la cantidad de números de la tabla. La subrutina debe devolver en $v0 la suma de los números de la
+tabla​
+
+
+.data
+num: .word 1,2,3,4,5,6,7,8,9,10
+suma: .word 0
+
+.code
+daddi $a0, $0, num
+daddi $a1, 10
+jal suma
+ld $v0, suma($0)
+halt
+
+
+suma:	daddi $v0, $0, 0	
+loop:	beqz $a1, fin
+	daddi $a1, $a1, -1
+	lbu $t0, 0($a0)
+	daddi $v0, $v0, $t0
+	daddi $a0, $a0, 8
+	j loop
+fin:	jr $ra
+
+
+
+b) positivos
+ Idem a), pero la subrutina debe contar la cantidad de números positivos. Para ello, implementar y usar
+otra subrutina llamada es_positivo, que reciba un número en $a0 y devuelva en $v0 1 si es positivo y 0 de lo
+contrario.
+
+.data
+num: .word -1,-3,3,-4,4,5,6,7,-5,0
+cant: .word 0
+
+.code
+daddi $s0, $0, 10
+daddi $s1, $0, num
+daddi $s2, $0, 1
+daddi $s3, $0,0
+loop:	beqz $s0, fin
+	daddi $s0,$s0,-1
+	ld $a0, 0($s1)
+	jal es_positivo
+	bne $v0, $s2, noigual
+	daddi $s3,$s3,1
+noigual: daddi $s1,$s1, 8
+	j loop
+fin: sd $s3,cant($0)
+halt
+es_positivo:
+	daddi $v0,$0,0
+	slt $v0, $0, $a0
+	jr $ra
+	
+	
+
+5. Subrutinas anidadas
+ ⭐⭐
+a) Factorial: Implemente la subrutina factorial, que dado un número N devuelve factorial(N) = N! = N * (N-1) * (N-2) *
+… * 2 * 1. Por ejemplo, el factorial de 4 es 4! = 4*3*2*1. Recordá también que el factorial de 0 también existe, y es
+factorial(0) =0! = 1​
+
+.data
+num: .word 4
+fac: .word 0
+
+.code
+ld $a0, num($0)
+jal Factorial
+sd $v0, fac($0)
+halt
+
+Factorial: daddi $v0, $0,1 #acumulador
+	   beqz $a0, finfact
+loop:	dmul $v0, $v0, $a0
+	daddi $a0, $a0, -1
+	bnez $a0, loop
+finfact: jr $ra
+
+
+
+
+
+
+b) Número combinatorio: Utilizando factorial, implementa la subrutina comb que calcula el número combinatorio
+(también llamado coeficiente binomial) comb(m,n) = m! / (n! * (n-m)!). Asumir que n > m.
+.data
+n: .word 4          # n
+m: .word 2          # m
+fac: .word 0        # resultado
+
+.code
+    # Inicializar stack
+    daddi $sp, $0, 0x400
+
+    # Cargar parámetros
+    ld $a0, m($0)    # a0 = m
+    ld $a1, n($0)    # a1 = n
+
+    jal comb         # calcular combinatorio
+    sd $v0, fac($0)  # guardar resultado
+
+    halt
+
+#     FACTORIAL        
+Factorial:
+    daddi $v0, $0, 1
+    beqz  $a0, finfact
+
+fact_loop:
+    dmul  $v0, $v0, $a0
+    daddi $a0, $a0, -1
+    bnez  $a0, fact_loop
+
+finfact:
+    jr $ra
+
+
+comb:
+    # Reservar espacio en stack
+    daddi $sp, $sp, -40
+    sd $ra, 0($sp)
+    sd $s0, 8($sp)
+    sd $s1,16($sp)
+    sd $s2,24($sp)
+    sd $s3,32($sp)
+
+    # s0 = m
+    # s1 = n
+    daddi $s0, $a0, 0
+    daddi $s1, $a1, 0
+
+    #### m! ####
+    daddi $a0, $s0, 0
+    jal Factorial
+    daddi $s2, $v0, 0        # s2 = m!
+
+    # (n - m)!
+    dsub  $a0, $s1, $s0
+    jal Factorial
+    daddi $s3, $v0, 0        # s3 = (n-m)!
+
+    #n!
+    daddi $a0, $s1, 0
+    jal Factorial
+
+
+    #Comb(n,m) = n! / (m! * (n-m)!) 
+    dmul $s3, $s2, $s3       # s3 = m! * (n-m)!
+    ddiv $v0, $v0, $s3       # v0 = n! / s3
+
+    #Restaurar registro y stack 
+    ld $ra, 0($sp)
+    ld $s0, 8($sp)
+    ld $s1,16($sp)
+    ld $s2,24($sp)
+    ld $s3,32($sp)
+    daddi $sp,$sp,40
+
+    jr $ra
+
+6. Subrutina recursiva
+ ⭐⭐⭐
+​
+En un ejercicio anterior se implementó la subrutina factorial de forma iterativa. Implementar ahora la subrutina pero
+de forma recursiva.
+
+Factorial:
+	daddi $sp,$sp, -16
+	sd $ra, 0($sp)
+	sd $s0, 8($sp)
+
+	daddi $v0, $0, 1
+	beqz  $a0, finfact
+
+	daddi $s0, $a0, 0
+	daddi $a0, $a0, -1
+	jal factorial
+	dmul $v0,$s0,$v0
+
+finfact:
+	ld $ra, 0($sp)
+	ld $s0, 8($sp)
+	daddi $sp,$sp,16
+	
+    jr $ra
+
+		
+
+	
+	
+	

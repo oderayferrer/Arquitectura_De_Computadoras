@@ -1,0 +1,860 @@
+INTERRUPCIONES POR HARDWARE
+GUARDAMOS EL ESTADO DE LOS FLAGS Y LA DIR DE RETORNO CADA VEZ QUE EL DISPOSITIVO INTERRUMPE
+INT 0(HLT)
+INT 6(LEER CARACTER)
+INT 7(IMPRIMIR)
+
+PIC (PARA INTERRUPCIONES POR HARDWARE) DISPOSITIVO INTERNO
+CONTROLADOR DE INTERRUPCION PROGRAMABLE
+PERMITE CONECTAR VARIOS DISPOSITIVOS DECIDE QUE INTERRUPCIONES DEJA PASAR
+MANEJAMOS F10 TIMER HANDSHAKE
+
+-EOI PARA FINALIZAR INTERRUPCION
+REGISTROS DE ESTADO/CONFIGURACION 8 BITS 1 BIT POR CONEXION:
+
+-IMR INTERRUPCIONES HABILITADAS
+0 HABILITADA 1 DESHABILITADA
+0 HABILITADA 1 ENMASCARADA
+MOV AL, <MASCARA>
+OUT 21H,AL
+
+-IRR INTERRUPCIONES PEDIDAS
+0 NO PEDIDA 1 PEDIDA
+SOLO LECTURA
+
+-ISR INTERRUPCIONES EN EJECUCION
+0 NO EN EJECUCION 1 EN EJECUCION
+SOLO LECTURA
+
+
+ID DE INTERRUPCION DE CADA DISPOSITIVO:
+INT 0 -> F10
+INT 1 -> TIMER
+INT 2 -> HANDSHAKE
+INT 3 -> CDMA
+INT 4
+INT 5
+INT 6
+INT 7
+
+INTERRUPCIONES PARA LLAMAR A SUBRUTINAS
+PONERLE UN ID DEL 4 AL 255 Y MULTIPLICARLA POR CUATRO
+
+CONFIGURACION DEL PIC
+1.CONFIGURAR IMR
+2.CONFIGURAR EL REGISTRO INTX DONDE X ES LA LINEA DE INTERRUPCION
+A. INT0 PARA EL F10
+B. INT1 PARA TIMER
+ETC
+3. IMPLEMENTAR LA SUBRUTINA DE ATENCION, QUE TERMINA CON:
+A. MANDAR 20H AL REGISTRO EOI
+B. INSTRUCCION IRET
+4.PONER LA DIRECCION DE LA SUBRUTINA EN EL VECTOR DE INTERRUPCIONES
+
+HAY QUE PONER LA CONFIGURACION ENTRE CLI STI
+
+ORG 96
+DIR_X DW 3000H
+
+PRACTICA 3
+
+3)
+Luego de completarlo, verifique su funcionamiento en el simulador, y explicar detalladamente:
+A. ¿Qué hacen las instrucciones CLI y STI? ¿Qué podría suceder si no están las mismas y la persona que
+usa el programa presiona F10 rápidamente durante la configuración del PIC?
+EL CODIGO QUE ESTE ENTRE LAS INSTRUCCIONES CLI Y STI ESTARA DESHABILITADO PARA REALIZAR INTERRUPCIONES, ES DECIR, QUE AUNQUE SE DE UNA INTERRUPCION NO SERA TOMADA EN CUENTA, SE UTILIZAN PARA CONTENER EL CODIGO DE CONFIGURACION
+B. ¿Por qué se usa el valor 0FEH en el programa?
+PORQUE ESTAMOS CONFIGURANDO LA TECLA F10 Y HAY QUE MANDARLE AL IMR 1111 1110H PARA HABILITAR LA INTERRUPCION
+C. ¿Qué instrucciones le indican al PIC que la interrupción ha terminado?
+MOV AL, 20H
+OUT EOI, AL
+IRET
+D. ¿En qué dirección se encuentra la subrutina que atiende las interrupciones del F10?
+EN ORG 3000H
+
+4) A)
+EOI EQU 20H
+IMR EQU	21H
+INT0 EQU 24H
+IDF10 EQH 4
+
+ORG 16
+	DW 3000H
+
+ORG 1000H
+CADENA DB 'VAMOS LAS INTERRUPCIONES!'
+FIN DB ?
+
+ORG 2000H
+CLI
+MOV AL, 0FEH
+OUT IMR, AL
+MOV AL, IDF10
+OUT INT0, AL
+STI
+LOOP
+JMP LOOP
+INT 0 
+END
+
+ORG 3000H
+IMPRIMIR: PUSH BX
+	PUSH AX
+	MOV BX, OFFSET CADENA
+	MOV AL, OFFSET FIN - OFFSET CADENA
+	INT 7
+	MOV AL, 20H
+	OUT EOI, AL
+	POP AX
+	POP BX
+	IRET
+
+; 4B) Idem A pero ahora el programa termina luego de mostrar
+;5 veces el mensaje (es decir, luego de quepresione 5 veces la tecla F10).
+
+
+EOI EQU 20H
+IMR EQU	21H
+INT0 EQU 24H
+IDF10 EQU 4
+
+ORG 16
+	DW 3000H
+
+ORG 1000H
+CADENA DB "VAMOS LAS INTERRUPCIONES!"
+FIN DB ?
+FLAG DB 0
+
+
+ORG 3000H
+IMPRIMIR: PUSH BX
+	PUSH AX
+	MOV BX, OFFSET CADENA
+	MOV AL, OFFSET FIN - OFFSET CADENA
+	INT 7
+  INC FLAG
+	MOV AL, 20H
+	OUT EOI, AL
+  CMP FLAG, 5
+  JNZ SALTEAR
+  MOV AL, 0FFH
+  OUT IMR, AL
+SALTEAR: 	POP AX
+	POP BX
+	IRET
+
+ORG 2000H
+CLI
+MOV AL, 0FEH
+OUT IMR, AL
+MOV AL, IDF10
+OUT INT0, AL
+STI
+LOOP: 
+  CMP FLAG, 5
+  JNZ LOOP
+INT 0 
+END
+
+5A) ;a) Escribir un programa que muestra el mensaje “Vamos las interrupciones!” 
+;una vez cada 2 segundos y no termine nunca.
+
+EOI EQU 20H
+IMR EQU 21H
+INT1 EQU 25H
+IDTIM EQU 5
+CONT EQU 10H
+COMP EQU 11H
+
+ORG 20
+DW VAMOSLOSTIMERS
+
+ORG 1000H
+MSJ DB "VAMOS LOS TIMERS!", 0AH
+FIN DB 0
+
+
+ORG 3000H
+VAMOSLOSTIMERS:
+              PUSH BX
+              PUSH AX
+              MOV BX, OFFSET MSJ
+              MOV AL, OFFSET FIN - OFFSET MSJ
+              INT 7
+              MOV AL, 0
+              OUT CONT, AL
+              MOV AL, 20H
+              OUT EOI,AL
+              POP AX
+              POP BX
+              IRET
+
+ORG 2000H
+CLI
+MOV AL, 11111101B
+OUT IMR, AL
+MOV AL, IDTIM
+OUT INT1, AL
+MOV AL, 2
+OUT COMP, AL
+MOV AL, 0
+OUT CONT, AL
+STI
+LOOP:
+JMP LOOP
+
+INT 0
+END
+
+5B)
+;b) Modificar a) para que termine a los 10 segundos.
+
+EOI EQU 20H
+IMR EQU 21H
+INT1 EQU 25H
+IDTIM EQU 5
+CONT EQU 10H
+COMP EQU 11H
+
+ORG 20
+DW VAMOSLOSTIMERS
+
+ORG 1000H
+MSJ DB "VAMOS LOS TIMERS!", 0AH
+FLAG DB 0
+
+
+ORG 3000H
+VAMOSLOSTIMERS:
+              PUSH BX
+              PUSH AX
+              MOV BX, OFFSET MSJ
+              MOV AL, OFFSET FLAG - OFFSET MSJ
+              INT 7
+              INC FLAG
+              MOV AL, 0
+              OUT CONT, AL
+              MOV AL, 20H
+              OUT EOI,AL
+              CMP FLAG, 5
+              JNZ SALTO
+              MOV AL, 0FFH
+              OUT IMR, AL
+              SALTO: POP AX
+              POP BX
+              IRET
+
+ORG 2000H
+CLI
+MOV AL, 11111101B
+OUT IMR, AL
+MOV AL, IDTIM
+OUT INT1, AL
+MOV AL, 2
+OUT COMP, AL
+MOV AL, 0
+OUT CONT, AL
+STI
+LOOP:
+CMP FLAG, 5
+JNZ LOOP
+
+INT 0
+END
+
+
+
+
+
+5C)
+EOI EQU 20H
+IMR EQU 21H
+INT1 EQU 25H
+CONT EQU 10H 
+COMP EQU 11H
+IDTIM EQU 5
+
+ORG 20
+DW RUT_TIMER
+
+ORG 1000H
+MSJ DB "HOLA"
+FLAG DB 0
+
+ORG 3000H
+RUT_TIMER: PUSH AX
+          PUSH BX
+          MOV BX, OFFSET MSJ
+          MOV AL, OFFSET FLAG - OFFSET MSJ
+          INT 7
+          INC FLAG
+          MOV AL, 0FFH
+          OUT IMR, AL
+          MOV AL, 20H
+          OUT EOI, AL
+          POP BX
+          POP AX
+          IRET
+
+ORG 2000H
+CLI
+MOV AL, 11111101B
+OUT IMR, AL
+MOV AL, IDTIM
+OUT INT1, AL
+MOV AL, 10
+OUT COMP, AL
+MOV AL, 0 
+OUT CONT, AL
+STI
+LOOP: CMP FLAG, 0 
+      JZ LOOP
+INT 0
+END
+
+5D)
+;d) Desafío: Modificar a) para que el primer mensaje se imprima luego de 1 segundo, el segundo luego de 2
+;segundos, el tercero luego de 3, y así sucesivamente, hasta que se espere 255 en el último mensaje, y el
+;programa termine,
+
+EOI EQU 20H
+IMR EQU 21H
+INT1 EQU 25H
+IDTIM EQU 5
+CONT EQU 10H
+COMP EQU 11H
+
+ORG 20
+DW VAMOSLOSTIMERS
+
+ORG 1000H
+MSJ DB "VAMOS LOS TIMERS!", 0AH
+FLAG DB 0
+
+
+ORG 3000H
+VAMOSLOSTIMERS:
+              PUSH BX
+              PUSH AX
+              MOV BX, OFFSET MSJ
+              MOV AL, OFFSET FLAG - OFFSET MSJ
+              INT 7
+              INC FLAG
+              MOV AL, 0
+              OUT CONT, AL
+              IN AL, COMP
+              INC AL
+              OUT COMP, AL
+              MOV AL, 20H
+              OUT EOI,AL
+              CMP FLAG, 0FFH
+              JNZ SALTO
+              MOV AL, 0FFH
+              OUT IMR, AL
+              SALTO: POP AX
+              POP BX
+              IRET
+
+ORG 2000H
+CLI
+MOV AL, 11111101B
+OUT IMR, AL
+MOV AL, IDTIM
+OUT INT1, AL
+MOV AL, 1
+OUT COMP, AL
+MOV AL, 0
+OUT CONT, AL
+STI
+LOOP:
+CMP FLAG, 0FFH
+JNZ LOOP
+
+INT 0
+END
+
+6) F10 con Timer
+a) Conteo regresivo ⭐⭐: Escribir un programa que implemente un conteo regresivo a partir de un valor
+(de 1 a 9) ingresado desde el teclado. El conteo debe comenzar al presionarse la tecla F10. El tiempo
+transcurrido debe mostrarse en pantalla, actualizándose el valor cada segundo. Por ejemplo, si se
+ingresa el valor 7, cuando se apreta F10 debe mostrarse en pantalla “7 6 5 4 3 2 1 0” en los 7 segundos
+siguientes
+Pista: Una vez leído el dígito se puede activar solamente la interrupción F10, y cuando se invoque la
+subrutina F10 activar el Timer para que a partir de ese momento se muestre el conteo regresivo.
+
+EOI EQU 20H
+IMR EQU 21H
+INT0 EQU 24H
+INT1 EQU 25H
+IDF10 EQU 4
+IDTIM EQU 5
+
+ORG 16
+DW SUB1
+
+ORG 1000H
+CHAR DB ?, ' '
+FLAG DB 0
+
+ORG 3000H 
+SUB1:   PUSH BX
+	PUSH AX
+	CLI
+	MOV AL, 1
+	OUT COMP, AL
+	MOV AL, 0
+	OUT CONT, AL
+ 	MOV AL, 1111 1101B
+	OUT IMR, AL
+	STI
+	MOV AL, 20H
+	OUT EOI, AL
+	POP AX
+	POP BX
+	IRET
+
+	
+IRET
+
+ORG 3500H
+SUB2: 
+	PUSH AX
+	PUSH BX   
+	MOV BX, OFFSET CHAR
+	MOV AL, 2
+	INT 7
+	CMP CHAR, 0
+	JNZ XHAU
+	MOV AL, 0FFH
+	OUT IMR, AL
+	
+XHAU:   DEC CHAR	
+	MOV AL, 20H
+	OUT EOI
+
+
+ORG 2000H
+	MOV BX, OFFSET CHAR
+LUP:	INT 6
+	CMP CHAR, 9
+	JNS LUP
+	CMP CHAR, 1
+	
+	
+CLI
+MOV AL, 11111110B
+OUT IMR, AL
+MOV AL, IDF10
+OUT INT0, AL
+MOV AL, IDTIM
+OUT INT1, AL
+STI
+
+LOOP1: CMP FLAG, 0
+	JZ LOOP1	
+INT 0
+END
+
+
+/////////////////mati 
+EOI  EQU 20H
+IMR  EQU 21H
+INT0 EQU 24H
+INT1 EQU 25H
+CONT EQU 10H
+COMP EQU 11H
+ID_F10 EQU 5
+ID_TIM EQU 10
+
+ORG 20
+DW SUB_F10
+
+ORG 40
+DW SUB_TIM
+
+ORG 1000H
+DIGIT DB ?, ' '
+FLAG DB 0
+
+
+ORG 3000H
+; Esta subrutina comprueba si el char almacenado en DIGIT es un char del 1 al 9.
+; Retorna FF en AL si lo es, y 0 si no lo es
+CHECK_DIG: MOV AL, DIGIT
+           CMP AL, 31H
+           JS NO_ES
+           CMP AL, 3AH
+           JNS NO_ES
+           MOV AL, 0FFH
+           JMP CHAU
+NO_ES:     MOV AL, 0
+CHAU:      RET
+
+
+ORG 3100H
+SUB_F10: PUSH AX
+         CLI
+         MOV AL, 0FDh
+         OUT IMR, AL
+         MOV AL, 1
+         OUT COMP, AL
+         MOV AL, 0
+         OUT CONT, AL
+         STI
+         MOV AL, EOI
+         OUT EOI, AL
+         POP AX
+         IRET
+
+ORG 3200H
+SUB_TIM: PUSH AX
+         PUSH BX
+         MOV BX, OFFSET DIGIT
+         MOV AL, 2
+         INT 7
+         CMP DIGIT, '0'
+         JNZ SEGUIR
+         MOV AL, 0FFH
+         OUT IMR, AL
+         INC FLAG
+         JMP LISTO
+SEGUIR:  DEC DIGIT
+         MOV AL, 0
+         OUT CONT, AL
+LISTO:   MOV AL, EOI
+         OUT EOI, AL
+         POP BX
+         POP AX
+         IRET
+
+
+ORG 2000H
+      MOV BX, OFFSET DIGIT
+READ: INT 6
+      CALL CHECK_DIG
+      CMP AL, 0FFh
+      JNZ READ
+      CLI
+      MOV AL, 0FEH
+      OUT IMR, AL
+      MOV AL, ID_F10
+      OUT INT0, AL
+      MOV AL, ID_TIM
+      OUT INT1, AL
+      STI
+LOOP: CMP FLAG, 1
+      JNZ LOOP
+      INT 0
+      END
+////////////////
+
+impresora con handshake
+
+ya no hay que hacer polling
+bit de interrupción linea 2-> 1 activado
+bit mas significativo en 1 para que funcionen las interrupciones en estado
+
+7) Impresión con HANDSHAKE mediante interrupciones ⭐⭐
+2/4
+Arquitectura de Computadoras 2024
+a) Escribir un programa que imprime “UNIVERSIDAD NACIONAL DE LA PLATA” en la impresora a
+través del HAND-SHAKE. El envío de los caracteres se realiza por interrupciones emitidas desde el
+HAND-SHAKE cada vez que detecta que la impresora se desocupa.
+
+EOI equ 20H
+IMR Equ 21H
+INT2 equ 26H
+DATA EQU 40H
+STATE EQU 41H
+idhs equ 4
+
+
+org 16
+ dw interrumpoloco
+
+org 1000h
+str db "UNIVERSIDAD NACIONAL DE LA PLATA"
+fin db ?
+org 3000h
+interrumpoloco: mov al, [bx]
+		out data, al
+		inc bx
+		dec cl
+		jnz sigo
+		mov al, 0ffh
+		out imr, al
+sigo:		mov al, 20h
+		out eoi, al
+		iret
+
+
+org 2000h
+cli
+mov al, 11111011b
+out imr, al
+mov al, idhs
+out int2, al
+in al, state
+or al, 80h
+out state, al
+mov bx, offset str
+mov cl, offset fin - offset str
+sti
+loop:	cmp cl, 0
+	jnz loop
+int 0
+end
+
+b) Probar el programa utilizando:
+1) Una velocidad de reloj del 100%, y una velocidad de impresión del 25%
+
+2) Una velocidad de reloj del 25%, y una velocidad de impresión del 100%
+
+¿En qué caso sería mejor utilizar consulta de estado en lugar de interrupciones?
+
+
+c) Modificar a) de modo que el string a imprimir se lea desde teclado. El string a leer tiene una longitud
+fija de 10 caracteres, y se lee de forma completa antes de comenzar la impresión. Tener en cuenta
+entonces que las interrupciones deben esperar a que se ingrese todo el string.
+
+EOI EQU 20H
+IMR EQU 21H
+INT2 EQU 26H
+IDINT2 EQU 4
+DATA EQU 40H
+STATE EQU 41H
+
+ORG 16
+DW INTERRUMPI
+
+
+ORG 1000H
+STR DB ?, ?, ? , ?, ?, ?, ?, ?, ?, ?
+
+
+
+ORG 3000H
+INTERRUMPI:
+	MOV AL, [BX]
+	OUT DATA, AL
+  INC BX
+	DEC CL
+	JNZ SIGO
+	MOV AL, 0FFH
+	OUT IMR, AL
+		
+SIGO: MOV AL, 20H
+OUT EOI, AL
+IRET
+
+ORG 2000H
+MOV CL, 10
+MOV BX, OFFSET STR
+LUP:    INT 6
+	INC BX
+	DEC CL
+	JNZ LUP
+CLI
+MOV AL, 0FBH
+OUT IMR, AL
+MOV AL, IDINT2
+OUT INT2, AL
+IN AL, STATE
+OR AL, 80H
+OUT STATE, AL
+MOV BX, OFFSET STR
+MOV CL, 10
+STI
+
+LUPITI: CMP CL, 0
+	JNZ LUPITI
+INT 0
+END
+
+d) Modificar b) de modo que cuando se presione F10 se cancele la impresión. En tal caso, deben
+desactivarse las interrupciones del HANDSHAKE para evitar que se envíen más caracteres a imprimir.
+
+EOI EQU 20H
+IMR EQU 21H
+INT2 EQU 26H
+IDINT2 EQU 4
+DATA EQU 40H
+STATE EQU 41H
+INT0 EQU 24H
+IDF10 EQU 5
+
+ORG 16
+DW INTERRUMPI
+
+
+ORG 20
+DW EFEDIE
+
+ORG 1000H
+STR DB ?, ?, ? , ?, ?, ?, ?, ?, ?, ?
+FLAG DB 0
+
+
+ORG 3000H
+INTERRUMPI:
+	MOV AL, [BX]
+	OUT DATA, AL
+  INC BX
+	DEC CL
+	JNZ SIGO
+	MOV AL, 0FFH
+	OUT IMR, AL
+		
+SIGO: MOV AL, 20H
+OUT EOI, AL
+IRET
+
+
+ORG 3500H
+EFEDIE: MOV AL, 0FFH
+	OUT IMR, AL
+	MOV AL, 20H
+	OUT EOI, AL
+	MOV AL, STATE
+	AND AL, 00H
+	OUT STATE, AL
+	MOV FLAG, 1
+	IRET
+
+ORG 2000H
+MOV CL, 10
+MOV BX, OFFSET STR
+LUP:    INT 6
+	INC BX
+	DEC CL
+	JNZ LUP
+CLI
+MOV AL, 11111010B
+OUT IMR, AL
+MOV AL, IDINT2
+OUT INT2, AL
+IN AL, STATE
+OR AL, 80H
+OUT STATE, AL
+MOV BX, OFFSET STR
+MOV CL, 10
+MOV AL, IDF10
+OUT INT0, AL
+STI
+
+LUPITI: CMP FLAG, 1
+	JNZ LUPITI
+INT 0
+END
+
+
+///////////
+
+4) F10, lectura e Impresora con PIO ⭐⭐⭐ Escribir un programa que debe mostrar en pantalla el mensaje
+“PRESIONE F10 PARA COMENZAR” y una vez que el usuario presiona F10, leer de teclado un mensaje de
+10 caracteres. Este mensaje debe luego ser enviado a través de la pila a una subrutina para imprimirse en la
+impresora mediante el PIO. La configuración del PIO también debe hacerse en una subrutina aparte
+
+EOI EQU 20H
+IMR EQU 21H
+INT0 EQU 24H
+IDF10 EQU 4
+PA EQU 30H
+PB EQU 31H
+CA EQU 32H
+CB EQU 33H
+
+
+ORG 16
+DW INTEF10
+
+ORG 1000H
+MSJ DB "PRESIONE F10 PARA COMENZAR"
+STR DB ?,?,?,?,?,?,?,?,?,?
+FLAG DB 0
+
+
+ORG 3000H
+INTEF10: PUSH AX
+	INC FLAG
+	MOV AL, 0FFH
+	OUT IMR, AL
+	MOV AL, 20H
+	OUT EOI, AL
+	POP AX
+IRET
+
+ORG 3200H 
+INIPIO: PUSH AX
+	MOV AL, 00H
+	OUT CB, AL
+	MOV AL, 01H
+	OUT CA, AL
+	POP AX
+RET
+
+
+ORG 3800H
+IMPRIMIR: 
+	MOV BX, SP
+	MOV CL, [BX + 2]
+	MOV BX, [BX + 4]
+REPETIR:	MOV DL, [BX]
+POLL:	IN AL, PA
+	AND AL, 1
+	JNZ POLL
+
+	MOV AL, DL
+	OUT PB, AL
+	IN AL, PA ; FLANCOASCENDENTE
+	AND AL, 11111101B
+	OUT PA, AL
+	IN AL, PA
+	OR AL, 02H
+	OUT PA, AL
+	INC BX
+	DEC CL
+	JNZ REPETIR
+	  RET
+
+ORG 4000H
+LEERSTR: PUSH CX
+	PUSH BX
+REPE:	INT 6
+	INC BX
+	DEC CL
+	JNZ REPE
+	POP BX
+	POP CX
+RET
+	
+
+ORG 2000H
+MOV BX, OFFSET MSJ
+MOV AL, OFFSET STR - OFFSET MSJ
+INT 7
+
+CLI
+MOV AL, 11111110B
+OUT IMR, AL
+MOV AL, IDF10
+OUT INT0, AL
+CALL INIPIO
+STI
+
+LOOP: CMP FLAG, 1
+	JNZ LOOP
+	MOV BX, OFFSET STR
+	MOV CL, 10
+	CALL LEERSTR
+	PUSH BX
+	PUSH CX
+	CALL IMPRIMIR
+POP CX
+POP BX
+
+INT 0
+END
+  
+.//////////////////////////////////////////////

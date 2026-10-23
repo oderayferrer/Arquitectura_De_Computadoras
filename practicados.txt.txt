@@ -1,0 +1,546 @@
+PB EQU 31h
+CB EQU 33h
+ORG 2000H
+mov al, 00h
+out CB, al
+mov al, 0Fh
+out PB, al
+int 0
+end
+
+
+PA EQU 30h
+CA EQU 32h
+ORG 1000h
+msj db "Apagadas"
+ORG 2000H
+mov al, 0FFh
+out CA, al
+in al, PA
+cmp al, 0
+jnz fin
+mov al, 8
+mov bx , offset msj
+int 7
+fin: int 0
+end
+
+
+PA EQU 30h
+PB EQU 31h
+CA EQU 32h
+CB EQU 33h
+ORG 2000h
+mov al, 0FFh
+out CA, al
+mov al, 00h
+out CB, al
+in al, PA
+out PB, al
+int 0
+end
+
+
+2) Uso de las luces y las llaves a través del PIO. ⭐⭐
+Ejecutar los programas con el simulador VonSim utilizando los dispositivos “Llaves y Luces” que conectan
+las llaves al puerto PA del PIO y a las luces al puerto PB.
+a) Patrón de Luces Fijo Escribir un programa que encienda las luces con el patrón 11000011, o sea, solo
+las primeras y las últimas dos luces deben prenderse, y el resto deben apagarse.
+A) 
+PB EQU 31H
+CB EQU 33H
+ORG 2000H
+	MOV AL, 00H 
+	OUT CB, AL
+	MOV AL, 11000011b ; C3h
+	OUT PB, AL
+	INT 0
+END
+
+
+
+b) Verificar Llave Escribir un programa que verifique si la llave de más a la izquierda está prendida. Si es
+así, mostrar en pantalla el mensaje “Llave prendida”, y de lo contrario mostrar “Llave apagada”. Solo
+importa el valor de la llave de más a la izquierda (bit más significativo). Recordar que las llaves se
+manejan con las teclas 0-7.
+
+PA EQU 30H
+CA EQU 32H
+ORG 1000H
+MSJA DB "LLAVE APAGADA"
+MSJP DB "LLAVE PRENDIDA"
+ORG 2000H
+MOV AL, 0FFH
+OUT CA, AL
+IN AL, PA
+TEST AL, 80H
+JNZ PRENDIDA
+MOV AL, 13
+MOV BX, OFFSET MSJA
+INT 7
+JMP FIN
+PRENDIDA: MOV AL, 14
+	MOV BX, OFFSET MSJP
+	INT 7
+	
+FIN: INT 0
+
+END
+
+c) Control de luces mediante llaves Escribir un programa que permite encender y apagar las luces
+mediante las llaves. El programa no deberá terminar nunca, y continuamente revisar el estado de las
+llaves, y actualizar de forma consecuente el estado de las luces. La actualización se realiza simplemente
+prendiendo la luz i, si la llave i correspondiente está encendida (valor 1), y apagándola en caso
+contrario. Por ejemplo, si solo la primera llave está encendida, entonces solo la primera luz se debe
+quedar encendida.
+
+c) 
+PA EQU 30H
+PB EQU 31H
+CA EQU 32H
+CB EQU 33H
+
+ORG 2000H
+	MOV AL, 0FFH
+	OUT CA, AL
+	MOV AL, 0
+	OUT CB, AL
+LOOP:	IN AL, PA
+	OUT PB, AL
+	JMP LOOP
+	INT 0
+END
+
+
+Parte dos
+///////////////////////////////////
+a) Indica cuáles de las 3 señales son de entrada o de salida.
+data salida
+storbe y busy entrada
+b) Si bien la señal de data envía el string “holaa”, las señales de strobe y busy que se envían no permiten
+que se impriman todos los caracteres. Indicar qué imprime la impresora. ¿Cuál es la razón por la cuál
+algunos carácteres no se imprimen?
+???
+c) El diseño de la impresora tiene 2 señales de sincronización. No obstante, se podría pensar que sólo con
+la señal busy alcanza. ¿Qué sucedería al querer imprimir “aa” si no existiera la señal de strobe?
+Nota: para simplificar, la línea de data de la impresora se muestra directamente con el carácter a enviar. No
+obstante, en la realidad data consta de 8 líneas de 1 bit que representan el código ascii del carácter.
+a, ya que para la a repetida no detecta el  cambio
+
+2) Verificación del bit busy ⭐
+El siguiente programa tiene como objetivo verificar el bit de busy a través del PIO e imprimir “Ocupada” si la
+impresora está ocupada y “Libre” de lo contrario.
+
+0 Output 1 Input
+
+BUSY (B) INPUT
+STORB(S) OUTPUT
+DATA OUPUT
+
+pa es de entrada y queda xxxxxxSB > aca va el estado de la impresora
+pb			 00000000 > aca va el dato
+ca			 xxxxxx01 > output e input de pa
+cb			 00000000 > porque pb es puro output
+
+
+a) Complete el código para que el programa funcione correctamente.
+
+PA EQU 30h
+CA EQU 32h
+ORG 1000h
+si db "Ocupada"
+no db "Libre"
+ORG 2000H
+
+mov al, 01h
+out CA, al ; configuro el estado de la impresora sb-> 01 porque necesito s de salida y b de entrada
+in al, PA ; veo como esta el estado de la impresora
+test al, 01h; veo si da 1 es que esta ocupada, si b esta en 1 ocpada en 0 libre
+jnz ocupada 
+mov bx, offset no 
+mov al, 5
+int 7
+jmp fin
+ocupada: mov bx, offset si
+mov al, 7
+int 7
+fin: int 0
+end
+
+
+b) Modifique el código para que el programa no imprima “Ocupada”. En lugar de eso, el programa debe
+esperar a que el bit de busy sea 0 usando consulta de estado. Cuando eso suceda, imprimir “Libre” y
+terminar el programa
+
+PA EQU 30h
+CA EQU 32h
+ORG 1000h
+	si db “Ocupada”
+	no db “Libre”
+ORG 2000H
+	mov al, 01h
+	out CA, al
+loop:	in al, PA
+	test al, 01h
+	jnz loop
+	mov bx, offset no
+	mov al, 5
+	int 7
+	int 0
+end
+
+3) Subrutina para el envío del carácter y la señal de Strobe ⭐⭐
+El envío de la señal de strobe se puede modularizar en una subrutina para ser reutilizado en distintas
+ocasiones. Implementar una subrutina 📄flanco_ascendente que envía el flanco ascendente (un 0 y luego
+un 1) a través del strobe. Asumir que el PIO ya está configurado correctamente para comunicarse con la
+impresora.
+
+
+org 3000h
+flanco_ascendente: push ax
+		in al, pa
+		and al, 11111101b
+		out pa, al
+		in al, pa
+		or al, 00000010b
+		out pa, al
+		pop ax
+		ret
+
+4) Uso de la impresora a través de la PIO ⭐⭐
+Ejecutar los programas configurando el simulador VonSim con los dispositivos “Impresora (PIO)”. En esta
+configuración, el puerto de datos de la impresora se conecta al puerto PB del PIO, y los bits de busy y strobe
+de la misma se conectan a los bits 0 y 1 respectivamente del puerto PA.
+a) Imprimir letra fija Escribir un programa para imprimir la letra “A” utilizando la impresora a través de
+la PIO. Recordar que el programa deberá esperar hasta que el bit de busy esté apagado, luego enviar el
+carácter, y luego enviar el flanco ascendente a través de la señal de strobe. Modularizar el programa en
+4 subrutinas:
+📄 ini_pio: Inicializa el PIO configurando los registros CA y CB según corresponde a strobe, busy y
+puerto de datos
+📄 poll: Consulta el bit busy de la impresora, e itera hasta esté en 0. Cuando está en 0 la subrutina
+retorna sin devolver ninǵun valor
+📄 flanco_ascendente: Igual que la subrutina implementada en el ejercicio anterior
+📄 imprimir_caracter: Recibe un carácter a imprimir en AL, y utilizando poll y flanco_ascendente,
+realiza todos los pasos necesarios para enviar a la impresora el carácter.
+
+org 2500h
+ini_pio:push ax
+	mov al, 01h 
+	out ca, al
+	mov al, 00h
+	out cb, al
+	pop ax
+	ret
+
+org 3000h 
+poll: push ax
+loop: in al, pa
+	test al, 01h
+	jnz loop
+	pop ax
+	ret
+
+org 3200h
+flanco_ascendente: push ax
+		in al, pa
+		and al, 11111101b
+		out pa, al
+		in al, pa
+		or al, 00000010b
+		out pa, al
+		pop ax
+		ret
+
+org 3500h
+imprimir_caracter: call poll
+		   out pb, al
+		   call flanco_ascendente
+		   ret
+
+b) Imprimir mensaje fijo Escribir un programa para imprimir el mensaje “ORGANIZACION Y
+ARQUITECTURA DE COMPUTADORAS” utilizando la impresora a través de la PIO. Utilizar la
+subrutina imprimir_caracter del inciso anterior.
+
+PA EQU 30H
+PB EQU 31H
+CA EQU 32H
+CB EQU 33H
+org 1000h
+msj db "ORGANIZACION Y ARQUITECTURA DE COMPUTADORAS"
+corte db ?
+
+
+org 2500h
+ini_pio:push ax
+	mov al, 01h 
+	out ca, al
+	mov al, 00h
+	out cb, al
+	pop ax
+	ret
+
+org 3000h 
+poll: push ax
+loop: in al, pa
+	test al, 01h
+	jnz loop
+	pop ax
+	ret
+
+org 3200h
+flanco_ascendente: push ax
+		in al, pa
+		and al, 11111101b
+		out pa, al
+		in al, pa
+		or al, 00000010b
+		out pa, al
+		pop ax
+		ret
+
+org 3500h
+imprimir_caracter: call poll
+		   out pb, al
+		   call flanco_ascendente
+		   ret
+
+org 2000h 
+	call ini_pio
+  mov cl, offset corte - offset msj
+	mov bx, offset msj
+	loops: mov al, [bx]
+	call imprimir_caracter
+	inc bx
+	dec cl
+	jnz loops
+int 0
+end
+
+
+c) Imprimir mensaje leído Escribir un programa que solicita el ingreso de cinco caracteres por teclado y
+los envía de a uno por vez a la impresora a través de la PIO a medida que se van ingresando. No es
+necesario mostrar los caracteres en la pantalla. Utilizar la subrutina imprimir_caracter del inciso
+anterior.
+
+
+PA EQU 30H
+PB EQU 31H
+CA EQU 32H
+CB EQU 33H
+org 1000h
+msj db ?
+corte db 5
+
+
+org 2500h
+ini_pio:push ax
+	mov al, 01h 
+	out ca, al
+	mov al, 00h
+	out cb, al
+	pop ax
+	ret
+
+org 3000h 
+poll: push ax
+loop: in al, pa
+	test al, 01h
+	jnz loop
+	pop ax
+	ret
+
+org 3200h
+flanco_ascendente: push ax
+		in al, pa
+		and al, 11111101b
+		out pa, al
+		in al, pa
+		or al, 00000010b
+		out pa, al
+		pop ax
+		ret
+
+org 3500h
+imprimir_caracter: call poll
+		   out pb, al
+		   call flanco_ascendente
+		   ret
+
+org 2000h 
+	call ini_pio
+  	mov cl, corte
+	mov bx, offset msj
+loops:	int 6
+	mov al, [bx]
+	call imprimir_caracter
+	inc bx
+	dec cl
+	jnz loops
+int 0
+end
+
+5) Uso de la impresora a través del HAND-SHAKE. ⭐⭐
+El HANDSHAKE es un dispositivo diseñado específicamente para interactuar con la impresora mediante el
+protocolo centronics. Por este motivo, no requiere enviar la señal de flanco ascendente manualmente; en
+lugar de eso, al escribir un valor en su registro DATA, el mismo HANDSHAKE manda el flanco ascendente.
+Ejecutar los programas configurando el simulador VonSim con los dispositivos “Impresora (Handshake)”
+a) Escribir un programa que imprime “INGENIERIA E INFORMATICA” en la impresora a través del
+HAND-SHAKE. La comunicación se establece por consulta de estado (polling). Para ello, implementar
+la subrutina imprimir_caracter_hand que funcione de forma análoga a imprimir_caracter pero con el
+handshake en lugar del PIO.
+
+DATA EQU 40H
+STATE EQU 41H
+org 1000h
+msj db  "INGENIERIA E INFORMATICA"
+corte db ?
+
+org 2500h
+poll: 	push ax
+loop:	in al, STATE
+	test al, 01h
+	jnz loop
+	pop ax
+	ret
+
+org 3000h
+imprimir_caracter_hand: call poll
+			out data, al
+			ret
+
+org 2000h
+	mov cl, offset corte - offset msj
+	mov bx, offset msj
+repe:	mov al, [bx]
+	call imprimir_caracter_hand
+	inc bx
+	dec cl
+	jnz repe
+int 0
+end
+
+Parte 3: Entrada/Salida con dispositivos genéricos a través del PIO
+
+1) PIO con dispositivos genéricos ⭐⭐⭐
+Si bien el PIO solo permite conectarse a las luces, interruptores y la impresora en este simulador, al ser un
+dispositivo programable podríamos utilizarlo para interactuar con nuevos dispositivos que no cuenten con un
+hardware especializado para interactuar con ellos. En los siguientes incisos, te proponemos escribir programas
+que usen nuevos dispositivos ficticios, pero con un protocolo de comunicación definido. Nota: los dispositivos
+nuevos no están implementados en el simulador, pero podés probar el funcionamiento del programa utilizando
+las luces y las llaves haciendo de cuenta que sirven como entrada y salida del dispositivo.
+a) Escribir un programa que, utilizando el puerto PB del PIO, envíe la cadena de caracteres “UNLP” a un
+dispositivo nuevo. Este dispositivo debe recibir la cadena de a un carácter a la vez. Para distinguir
+entre caracteres, el dispositivo necesita que antes de cada carácter nuevo se envíe el código ASCII 0.
+Además, para indicar que se finalizó el envío, debe mandarse el código ASCII 255.
+Ejemplo: Para transmitir la cadena “UNLP”, debe enviarse: 0, “U”, 0, “N”, 0, “L”, 0, “P”, 255
+
+{PB EQU 31H
+CB EQU 33H
+ORG 1000H
+;            55       4E      4C     50 
+CADENA DB 0, 'U', 0, 'N', 0, 'L', 0, 'P', 255
+CORTE DB ?
+
+
+ORG 2500H
+INI_PIO: MOV AL, 00H
+	      OUT CB, AL
+        RET
+
+ORG 3000H
+IMPRIMO:
+	OUT PB, AL
+	RET
+	
+ORG 2000H
+	CALL INI_PIO
+	MOV CL, OFFSET CORTE - OFFSET CADENA
+	MOV BX, OFFSET CADENA
+LUP:	MOV AL, [BX]
+	INC BX
+	DEC CL
+	CMP AL, 0
+	JZ LUP
+	CMP AL, 255
+	JZ FIN
+	CALL IMPRIMO
+	CMP CL, 0
+	JNZ LUP
+FIN: INT 0
+END
+	}
+/////////////////// ESTE ESTA BIEN EL OTRO NO
+PB EQU 31H
+CB EQU 33H
+ORG 1000H
+;            55       4E      4C     50 
+CADENA DB  'U', 'N', 'L', 'P', 255
+
+
+
+ORG 2500H
+INI_PIO: MOV AL, 00H
+	      OUT CB, AL
+        RET
+
+ORG 3000H
+IMPRIMO: PUSH AX
+LUP:	MOV AL, 0
+	OUT PB, AL
+	MOV AL, [BX]
+	OUT PB, AL
+	INC BX
+	CMP AL, 255
+	JZ CHAU
+	JMP LUP
+CHAU: POP AX
+RET
+
+ORG 2000H
+	CALL INI_PIO
+	MOV BX, OFFSET CADENA
+  CALL IMPRIMO
+
+FIN: INT 0
+END
+
+PB EQU 31H
+CB EQU 33H
+ORG 1000H
+;            55       4E      4C     50 
+CADENA DB  'U', 'N', 'L', 'P', 255
+
+
+
+ORG 2500H
+INI_PIO: MOV AL, 00H
+	      OUT CB, AL
+        RET
+
+ORG 3000H
+IMPRIMO: PUSH AX
+LUP:	MOV AL, 0
+	OUT PB, AL
+	MOV AL, [BX]
+	OUT PB, AL
+	INC BX
+	CMP AL, 255
+	JZ CHAU
+	JMP LUP
+CHAU: POP AX
+RET
+
+ORG 2000H
+	CALL INI_PIO
+	MOV BX, OFFSET CADENA
+  CALL IMPRIMO
+
+FIN: INT 0
+END
+
+b) Escribir un programa que reciba una cadena de caracteres de un dispositivo nuevo conectado a los
+puertos PA y PB. Este dispositivo envía la cadena de a un carácter a la vez. Para que el dispositivo sepa
+cuándo la CPU está lista para recibir un carácter, la CPU deberá enviar el valor FF al dispositivo a
+través del puerto PB. Luego, la CPU deberá leer desde el puerto PA, y volver a enviar el valor FF al
+dispositivo. La transmisión termina cuando se recibe el código ASCII 0.
+
